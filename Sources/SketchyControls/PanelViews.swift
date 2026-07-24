@@ -907,20 +907,16 @@ private struct HerdrStatusBadge: View {
 
 private struct HerdrKeyboardLegend: View {
     var body: some View {
-        VStack(spacing: 6) {
-            HStack {
-                legend(keys: "J K", action: "Move")
-                Spacer()
-                legend(keys: "Tab", action: "Location")
-                Spacer()
-                legend(keys: "H L", action: "Type")
-            }
-
-            HStack {
-                legend(keys: "↩", action: "Open")
-                Spacer()
-                legend(keys: "Esc", action: "Close")
-            }
+        HStack(spacing: 0) {
+            legend(keys: "J K", action: "Move")
+            Spacer(minLength: 8)
+            legend(keys: "Tab", action: "Location")
+            Spacer(minLength: 8)
+            legend(keys: "H L", action: "Type")
+            Spacer(minLength: 8)
+            legend(keys: "↩", action: "Open")
+            Spacer(minLength: 8)
+            legend(keys: "Esc", action: "Close")
         }
         .padding(.horizontal, 2)
     }

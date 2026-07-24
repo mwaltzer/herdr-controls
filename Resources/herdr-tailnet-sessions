@@ -48,7 +48,11 @@ while IFS= read -r peer; do
       }
     jq -c --argjson peer "$peer" '
       select(.result.snapshot.agents)
-      | $peer + {connection_status:"online", agents:.result.snapshot.agents}
+      | $peer + {
+          connection_status:"online",
+          agents:.result.snapshot.agents,
+          workspaces:.result.snapshot.workspaces
+        }
     ' <<< "$payload" > "$output"
   ) &
 done < <(jq -c '

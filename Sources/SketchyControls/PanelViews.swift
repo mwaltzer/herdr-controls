@@ -602,7 +602,7 @@ struct HerdrView: View {
                                                         .font(.system(size: 13, weight: .medium))
                                                         .foregroundStyle(SpaceTheme.text)
                                                         .lineLimit(1)
-                                                    Text("\(remote.agents.count) available \(remote.agents.count == 1 ? "agent" : "agents")")
+                                                    Text(remoteHostDetail(remote))
                                                         .font(.system(size: 10))
                                                         .foregroundStyle(SpaceTheme.overlay)
                                                 }
@@ -638,7 +638,8 @@ struct HerdrView: View {
                                                         status: agent.agentStatus,
                                                         focused: false,
                                                         remote: true,
-                                                        selected: model.isHerdrSelected("remote:\(remote.host):\(agent.id)")
+                                                        selected: model.isHerdrSelected("remote:\(remote.host):\(agent.id)"),
+                                                        vcs: remote.workspaces.first(where: { $0.id == agent.workspaceID })?.vcs
                                                     )
                                                 }
                                                 .buttonStyle(HerdrInteractiveButtonStyle())
@@ -676,6 +677,17 @@ struct HerdrView: View {
 
             HerdrKeyboardLegend()
         }
+    }
+
+    private func remoteHostDetail(_ remote: RemoteHerdrHost) -> String {
+        var parts = ["\(remote.agents.count) \(remote.agents.count == 1 ? "agent" : "agents")"]
+        if let operatingSystem = remote.operatingSystem, !operatingSystem.isEmpty {
+            parts.append(operatingSystem.capitalized)
+        }
+        if let tailnetIP = remote.tailnetIP, !tailnetIP.isEmpty {
+            parts.append(tailnetIP)
+        }
+        return parts.joined(separator: " · ")
     }
 }
 
@@ -786,6 +798,7 @@ private struct HerdrAgentRow: View {
     let focused: Bool
     let remote: Bool
     let selected: Bool
+    var vcs: HerdrVCSMetadata? = nil
 
     var body: some View {
         HStack(spacing: 8) {
@@ -807,6 +820,12 @@ private struct HerdrAgentRow: View {
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundStyle(SpaceTheme.overlay)
                 .lineLimit(1)
+            if let vcs {
+                Text(vcs.reference ?? vcs.change ?? vcs.provider)
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundStyle(SpaceTheme.overlay)
+                    .lineLimit(1)
+            }
             HerdrStatusBadge(status: status, compact: true)
         }
         .padding(.horizontal, 10)

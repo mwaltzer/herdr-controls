@@ -31,7 +31,7 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
     app="$out/Applications/Herdr Controls.app"
-    mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$out/bin"
+    mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$out/bin" "$out/share/herdr-controls"
     cp .build/release/SketchyControls "$app/Contents/MacOS/SketchyControls"
     cp Sources/SketchyControls/Resources/herdr-mask.svg "$app/Contents/Resources/"
     cp Sources/SketchyControls/Resources/tailscale-icon.svg "$app/Contents/Resources/"
@@ -42,6 +42,7 @@ stdenv.mkDerivation {
       --replace-fail "@BUILD_VERSION@" "${version}"
     printf 'APPL????' > "$app/Contents/PkgInfo"
     cp .build/release/SketchyControlsCLI "$out/bin/sketchy-controls"
+    cp -R Companion "$out/share/herdr-controls/Companion"
     runHook postInstall
   '';
 }

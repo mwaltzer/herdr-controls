@@ -72,8 +72,11 @@ let agentJSON = Data("""
 ]}}
 """.utf8)
 let tailnetJSON = Data("""
-[{"host":"studio","agents":[
+[{"host":"studio","connection_status":"online","os":"linux","tailnet_ip":"100.64.0.2","agents":[
   {"agent":"pi","agent_status":"running","pane_id":"r-1","workspace_id":"ws-9","terminal_title_stripped":"remote","focused":false}
+],"workspaces":[
+  {"workspace_id":"ws-9","label":"remote","number":1,"agent_status":"running","focused":false,
+   "tokens":{"vcs_provider":"git","vcs_ref":"main","vcs_dirty":"false"}}
 ]}]
 """.utf8)
 let nativeSnapshotJSON = Data("""
@@ -93,6 +96,8 @@ do {
     require(agents.count == 2 && agents[0].id == "p-1" && agents[0].workspaceID == "ws-1", "agent envelope decoding")
     let hosts = try HerdrTailnetContract.decodeHosts(tailnetJSON)
     require(hosts.count == 1 && hosts[0].host == "studio" && hosts[0].agents.count == 1, "tailnet host decoding")
+    require(hosts[0].reachable && hosts[0].operatingSystem == "linux", "tailnet identity decoding")
+    require(hosts[0].workspaces[0].vcs?.reference == "main", "tailnet VCS metadata decoding")
     let native = try HerdrLocalContract.decodeSnapshot(nativeSnapshotJSON)
     require(native.workspaces[0].vcs?.provider == "jj", "allowlisted VCS metadata decoding")
     require(native.workspaces[0].vcs?.dirty == true, "VCS dirty state decoding")

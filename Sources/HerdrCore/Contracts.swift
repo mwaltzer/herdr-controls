@@ -144,6 +144,7 @@ public struct HerdrAgent: Identifiable, Decodable, Equatable, Sendable {
 public struct RemoteHerdrHost: Identifiable, Decodable, Equatable, Sendable {
     public let host: String
     public let agents: [HerdrAgent]
+    public let workspaces: [HerdrWorkspace]
     public let dnsName: String?
     public let tailnetIP: String?
     public let operatingSystem: String?
@@ -153,7 +154,7 @@ public struct RemoteHerdrHost: Identifiable, Decodable, Equatable, Sendable {
     public var reachable: Bool { connectionStatus == "online" }
 
     enum CodingKeys: String, CodingKey {
-        case host, agents
+        case host, agents, workspaces
         case dnsName = "dns_name"
         case tailnetIP = "tailnet_ip"
         case operatingSystem = "os"
@@ -163,6 +164,7 @@ public struct RemoteHerdrHost: Identifiable, Decodable, Equatable, Sendable {
     public init(
         host: String,
         agents: [HerdrAgent],
+        workspaces: [HerdrWorkspace] = [],
         dnsName: String? = nil,
         tailnetIP: String? = nil,
         operatingSystem: String? = nil,
@@ -170,6 +172,7 @@ public struct RemoteHerdrHost: Identifiable, Decodable, Equatable, Sendable {
     ) {
         self.host = host
         self.agents = agents
+        self.workspaces = workspaces
         self.dnsName = dnsName
         self.tailnetIP = tailnetIP
         self.operatingSystem = operatingSystem
@@ -180,6 +183,7 @@ public struct RemoteHerdrHost: Identifiable, Decodable, Equatable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         host = try container.decode(String.self, forKey: .host)
         agents = try container.decodeIfPresent([HerdrAgent].self, forKey: .agents) ?? []
+        workspaces = try container.decodeIfPresent([HerdrWorkspace].self, forKey: .workspaces) ?? []
         dnsName = try container.decodeIfPresent(String.self, forKey: .dnsName)
         tailnetIP = try container.decodeIfPresent(String.self, forKey: .tailnetIP)
         operatingSystem = try container.decodeIfPresent(String.self, forKey: .operatingSystem)

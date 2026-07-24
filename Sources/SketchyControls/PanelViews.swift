@@ -421,22 +421,25 @@ struct HerdrView: View {
                                                         agent: agent.agent,
                                                         status: agent.agentStatus,
                                                         focused: agent.focused,
-                                                        remote: false
+                                                        remote: false,
+                                                        selected: model.isHerdrSelected("agent:\(agent.id)")
                                                     )
                                                 }
                                                 .buttonStyle(.plain)
                                                 .focusable(false)
-                                                .background(
-                                                    model.isHerdrSelected("agent:\(agent.id)") ? SpaceTheme.surface.opacity(0.52) : .clear,
-                                                    in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                                .herdrSelection(
+                                                    model.isHerdrSelected("agent:\(agent.id)"),
+                                                    cornerRadius: 6,
+                                                    accentInset: 6
                                                 )
                                                 .padding(.horizontal, 4)
                                                 .id("agent:\(agent.id)")
                                             }
                                         }
-                                        .background(
-                                            model.isHerdrSelected("workspace:\(workspace.id)") ? SpaceTheme.surface.opacity(0.58) : .clear,
-                                            in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                        .herdrSelection(
+                                            model.isHerdrSelected("workspace:\(workspace.id)"),
+                                            cornerRadius: 7,
+                                            accentInset: 9
                                         )
                                         .padding(.horizontal, 4)
                                         .id("workspace:\(workspace.id)")
@@ -495,22 +498,25 @@ struct HerdrView: View {
                                                         agent: agent.agent,
                                                         status: agent.agentStatus,
                                                         focused: false,
-                                                        remote: true
+                                                        remote: true,
+                                                        selected: model.isHerdrSelected("remote:\(remote.host):\(agent.id)")
                                                     )
                                                 }
                                                 .buttonStyle(.plain)
                                                 .focusable(false)
-                                                .background(
-                                                    model.isHerdrSelected("remote:\(remote.host):\(agent.id)") ? SpaceTheme.surface.opacity(0.52) : .clear,
-                                                    in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                                .herdrSelection(
+                                                    model.isHerdrSelected("remote:\(remote.host):\(agent.id)"),
+                                                    cornerRadius: 6,
+                                                    accentInset: 6
                                                 )
                                                 .padding(.horizontal, 4)
                                                 .id("remote:\(remote.host):\(agent.id)")
                                             }
                                         }
-                                        .background(
-                                            model.isHerdrSelected("host:\(remote.host)") ? SpaceTheme.surface.opacity(0.58) : .clear,
-                                            in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                        .herdrSelection(
+                                            model.isHerdrSelected("host:\(remote.host)"),
+                                            cornerRadius: 7,
+                                            accentInset: 9
                                         )
                                         .padding(.horizontal, 4)
                                         .id("host:\(remote.host)")
@@ -645,16 +651,17 @@ private struct HerdrAgentRow: View {
     let status: String
     let focused: Bool
     let remote: Bool
+    let selected: Bool
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: remote ? "arrow.up.right" : "arrow.turn.down.right")
                 .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(remote ? SpaceTheme.sapphire : SpaceTheme.overlay)
+                .foregroundStyle(selected || remote ? SpaceTheme.sapphire : SpaceTheme.overlay)
                 .frame(width: 20)
             Text(title)
                 .font(.system(size: 11))
-                .foregroundStyle(SpaceTheme.subtext)
+                .foregroundStyle(selected ? SpaceTheme.text : SpaceTheme.subtext)
                 .lineLimit(1)
             Spacer(minLength: 8)
             if focused {
@@ -674,6 +681,50 @@ private struct HerdrAgentRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(remote ? "Remote" : "Local") \(agent) agent, \(title)")
         .accessibilityValue("\(status.isEmpty ? "unknown" : status)\(focused ? ", focused" : "")")
+    }
+}
+
+private struct HerdrSelectionModifier: ViewModifier {
+    let selected: Bool
+    let cornerRadius: CGFloat
+    let accentInset: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(selected ? SpaceTheme.sapphire.opacity(0.13) : .clear)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .strokeBorder(
+                                selected ? SpaceTheme.sapphire.opacity(0.58) : .clear,
+                                lineWidth: 1
+                            )
+                    }
+            }
+            .overlay(alignment: .leading) {
+                Capsule()
+                    .fill(selected ? SpaceTheme.sapphire : .clear)
+                    .frame(width: 3)
+                    .padding(.vertical, accentInset)
+                    .padding(.leading, 2)
+            }
+    }
+}
+
+private extension View {
+    func herdrSelection(
+        _ selected: Bool,
+        cornerRadius: CGFloat,
+        accentInset: CGFloat
+    ) -> some View {
+        modifier(
+            HerdrSelectionModifier(
+                selected: selected,
+                cornerRadius: cornerRadius,
+                accentInset: accentInset
+            )
+        )
     }
 }
 

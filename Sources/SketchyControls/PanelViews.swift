@@ -24,7 +24,7 @@ struct PanelRootView: View {
         } allControls: {
             model.open(.controlCenter)
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(SpaceTheme.preferredColorScheme)
         .frame(width: model.panel == .controlCenter ? 440 : model.panel == .herdr ? 400 : 360)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxHeight: .infinity, alignment: .top)
@@ -63,8 +63,8 @@ struct PanelChrome<Content: View>: View {
             }
         }
         .padding(18)
+        .background(SpaceTheme.panelTint)
         .background(VisualEffect(material: .popover, blendingMode: .behindWindow))
-        .background(SpaceTheme.base.opacity(0.88))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)

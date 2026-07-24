@@ -12,6 +12,11 @@ It provides:
 - onboarding, bounded retry behavior, diagnostics, and accessibility support;
 - a versioned local IPC adapter for optional integrations such as SketchyBar.
 
+The app uses macOS semantic colors and materials by default, so its appearance
+tracks the current system release, light/dark mode, accent, and accessibility
+settings. Set `HERDR_CONTROLS_THEME=catppuccin-mocha` before launch to use the
+optional Catppuccin Mocha palette.
+
 ## Development
 
 ```sh

@@ -1,20 +1,28 @@
+import AppKit
 import SwiftUI
 
 enum SpaceTheme {
-    static let base = Color(hex: 0x1e1e2e)
-    static let mantle = Color(hex: 0x181825)
-    static let surface = Color(hex: 0x313244)
-    static let overlay = Color(hex: 0x6c7086)
-    static let text = Color(hex: 0xcdd6f4)
-    static let subtext = Color(hex: 0xa6adc8)
-    static let mauve = Color(hex: 0xcba6f7)
-    static let peach = Color(hex: 0xfab387)
-    static let green = Color(hex: 0xa6e3a1)
-    static let yellow = Color(hex: 0xf9e2af)
-    static let red = Color(hex: 0xf38ba8)
-    static let blue = Color(hex: 0x89b4fa)
-    static let sapphire = Color(hex: 0x74c7ec)
-    static let teal = Color(hex: 0x94e2d5)
+    private static let catppuccinMocha =
+        ProcessInfo.processInfo.environment["HERDR_CONTROLS_THEME"]?.lowercased() == "catppuccin-mocha"
+
+    static let preferredColorScheme: ColorScheme? = catppuccinMocha ? .dark : nil
+
+    static let base = catppuccinMocha ? Color(hex: 0x1e1e2e) : Color(nsColor: .windowBackgroundColor)
+    static let mantle = catppuccinMocha ? Color(hex: 0x181825) : Color(nsColor: .underPageBackgroundColor)
+    static let surface = catppuccinMocha ? Color(hex: 0x313244) : Color(nsColor: .controlBackgroundColor)
+    static let overlay = catppuccinMocha ? Color(hex: 0x6c7086) : Color(nsColor: .tertiaryLabelColor)
+    static let text = catppuccinMocha ? Color(hex: 0xcdd6f4) : Color(nsColor: .labelColor)
+    static let subtext = catppuccinMocha ? Color(hex: 0xa6adc8) : Color(nsColor: .secondaryLabelColor)
+    static let mauve = catppuccinMocha ? Color(hex: 0xcba6f7) : Color(nsColor: .systemPurple)
+    static let peach = catppuccinMocha ? Color(hex: 0xfab387) : Color(nsColor: .systemOrange)
+    static let green = catppuccinMocha ? Color(hex: 0xa6e3a1) : Color(nsColor: .systemGreen)
+    static let yellow = catppuccinMocha ? Color(hex: 0xf9e2af) : Color(nsColor: .systemYellow)
+    static let red = catppuccinMocha ? Color(hex: 0xf38ba8) : Color(nsColor: .systemRed)
+    static let blue = catppuccinMocha ? Color(hex: 0x89b4fa) : Color(nsColor: .systemBlue)
+    static let sapphire = catppuccinMocha ? Color(hex: 0x74c7ec) : Color(nsColor: .systemCyan)
+    static let teal = catppuccinMocha ? Color(hex: 0x94e2d5) : Color(nsColor: .systemTeal)
+
+    static let panelTint = base.opacity(catppuccinMocha ? 0.96 : 0.42)
 }
 
 extension Color {

@@ -166,7 +166,7 @@ struct OnboardingRootView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            VStack(spacing: 18) {
+            VStack(alignment: .leading, spacing: 18) {
                 onboardingFeature(
                     icon: "rectangle.3.group",
                     title: "See the work that is running",
@@ -183,6 +183,7 @@ struct OnboardingRootView: View {
                     detail: "Open a remote agent over SSH in your preferred terminal."
                 )
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Spacer()
         }
@@ -402,5 +403,11 @@ private struct HerdrOnboardingLogo: View {
             }
         }
         .frame(width: size, height: size)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        }
     }
 }

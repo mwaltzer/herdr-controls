@@ -165,6 +165,7 @@ private struct HerdrSettingsButton: NSViewRepresentable {
 
 private final class HerdrSettingsNSButton: NSButton {
     private var tracking: NSTrackingArea?
+    private var hovered = false
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -180,7 +181,9 @@ private final class HerdrSettingsNSButton: NSButton {
         wantsLayer = true
         layer?.cornerRadius = 7
         layer?.borderWidth = 1
-        updateAppearance(hovered: false)
+        focusRingType = .none
+        image?.isTemplate = true
+        updateAppearance()
     }
 
     override func updateTrackingAreas() {
@@ -202,27 +205,39 @@ private final class HerdrSettingsNSButton: NSButton {
     }
 
     override func mouseEntered(with event: NSEvent) {
-        updateAppearance(hovered: true)
+        hovered = true
+        updateAppearance()
     }
 
     override func mouseExited(with event: NSEvent) {
-        updateAppearance(hovered: false)
+        hovered = false
+        updateAppearance()
     }
 
-    private func updateAppearance(hovered: Bool) {
-        layer?.backgroundColor = hovered
-            ? NSColor(calibratedRed: 49 / 255, green: 50 / 255, blue: 68 / 255, alpha: 0.72).cgColor
+    override func mouseDown(with event: NSEvent) {
+        updateAppearance(pressed: true)
+        super.mouseDown(with: event)
+        updateAppearance()
+    }
+
+    override var acceptsFirstResponder: Bool { false }
+
+    private func updateAppearance(pressed: Bool = false) {
+        layer?.backgroundColor = pressed
+            ? NSColor(calibratedRed: 69 / 255, green: 71 / 255, blue: 90 / 255, alpha: 0.78).cgColor
+            : hovered
+                ? NSColor(calibratedRed: 49 / 255, green: 50 / 255, blue: 68 / 255, alpha: 0.72).cgColor
             : NSColor.clear.cgColor
         layer?.borderColor = NSColor(
             calibratedRed: 205 / 255,
             green: 214 / 255,
             blue: 244 / 255,
-            alpha: hovered ? 0.18 : 0.10
+            alpha: pressed ? 0.24 : hovered ? 0.18 : 0.10
         ).cgColor
         contentTintColor = NSColor(
-            calibratedRed: hovered ? 205 / 255 : 166 / 255,
-            green: hovered ? 214 / 255 : 173 / 255,
-            blue: hovered ? 244 / 255 : 200 / 255,
+            calibratedRed: hovered || pressed ? 205 / 255 : 166 / 255,
+            green: hovered || pressed ? 214 / 255 : 173 / 255,
+            blue: hovered || pressed ? 244 / 255 : 200 / 255,
             alpha: 1
         )
     }

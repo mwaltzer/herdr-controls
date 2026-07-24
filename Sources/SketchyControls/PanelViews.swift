@@ -781,12 +781,12 @@ private struct HerdrKeyboardLegend: View {
     let openSettings: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             legend(keys: "J K", action: "Move")
             legend(keys: "Tab", action: "Location")
             legend(keys: "H L", action: "Type")
             legend(keys: "↩", action: "Open")
-            Spacer()
+            Spacer(minLength: 4)
             legend(keys: "Esc", action: "Close")
             Button(action: openSettings) {
                 Image(systemName: "gearshape")
@@ -797,6 +797,7 @@ private struct HerdrKeyboardLegend: View {
             }
             .buttonStyle(.plain)
             .focusable(false)
+            .fixedSize()
             .accessibilityLabel("Herdr settings")
         }
         .padding(.horizontal, 2)
@@ -814,6 +815,7 @@ private struct HerdrKeyboardLegend: View {
                 .font(.system(size: 9))
                 .foregroundStyle(SpaceTheme.overlay)
         }
+        .fixedSize(horizontal: true, vertical: false)
     }
 }
 

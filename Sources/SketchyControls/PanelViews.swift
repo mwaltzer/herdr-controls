@@ -564,8 +564,7 @@ struct HerdrView: View {
                                                 .focusable(false)
                                                 .herdrSelection(
                                                     model.isHerdrSelected("agent:\(agent.id)"),
-                                                    cornerRadius: 6,
-                                                    accentInset: 6
+                                                    cornerRadius: 6
                                                 )
                                                 .padding(.horizontal, 4)
                                                 .id("agent:\(agent.id)")
@@ -573,8 +572,7 @@ struct HerdrView: View {
                                         }
                                         .herdrSelection(
                                             model.isHerdrSelected("workspace:\(workspace.id)"),
-                                            cornerRadius: 7,
-                                            accentInset: 9
+                                            cornerRadius: 7
                                         )
                                         .padding(.horizontal, 4)
                                         .id("workspace:\(workspace.id)")
@@ -641,8 +639,7 @@ struct HerdrView: View {
                                                 .focusable(false)
                                                 .herdrSelection(
                                                     model.isHerdrSelected("remote:\(remote.host):\(agent.id)"),
-                                                    cornerRadius: 6,
-                                                    accentInset: 6
+                                                    cornerRadius: 6
                                                 )
                                                 .padding(.horizontal, 4)
                                                 .id("remote:\(remote.host):\(agent.id)")
@@ -650,8 +647,7 @@ struct HerdrView: View {
                                         }
                                         .herdrSelection(
                                             model.isHerdrSelected("host:\(remote.host)"),
-                                            cornerRadius: 7,
-                                            accentInset: 9
+                                            cornerRadius: 7
                                         )
                                         .padding(.horizontal, 4)
                                         .id("host:\(remote.host)")
@@ -829,7 +825,6 @@ private struct HerdrInteractiveButtonStyle: ButtonStyle {
 private struct HerdrSelectionModifier: ViewModifier {
     let selected: Bool
     let cornerRadius: CGFloat
-    let accentInset: CGFloat
 
     func body(content: Content) -> some View {
         content
@@ -844,27 +839,18 @@ private struct HerdrSelectionModifier: ViewModifier {
                             )
                     }
             }
-            .overlay(alignment: .leading) {
-                Capsule()
-                    .fill(selected ? SpaceTheme.sapphire : .clear)
-                    .frame(width: 3)
-                    .padding(.vertical, accentInset)
-                    .padding(.leading, 2)
-            }
     }
 }
 
 private extension View {
     func herdrSelection(
         _ selected: Bool,
-        cornerRadius: CGFloat,
-        accentInset: CGFloat
+        cornerRadius: CGFloat
     ) -> some View {
         modifier(
             HerdrSelectionModifier(
                 selected: selected,
-                cornerRadius: cornerRadius,
-                accentInset: accentInset
+                cornerRadius: cornerRadius
             )
         )
     }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Single source for the app bundle identity. @SHORT_VERSION@ and
+     @BUILD_VERSION@ are substituted from VERSION (and HC_BUILD_VERSION) by
+     release/package.sh and by the nix derivation, so the dogfood install and
+     release archives always agree. -->
+<plist version="1.0"><dict>
+  <key>CFBundleExecutable</key><string>SketchyControls</string>
+  <key>CFBundleIdentifier</key><string>com.mwaltzer.herdr-controls</string>
+  <key>CFBundleName</key><string>Herdr Controls</string>
+  <key>CFBundleDisplayName</key><string>Herdr Controls</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>CFBundleShortVersionString</key><string>@SHORT_VERSION@</string>
+  <key>CFBundleVersion</key><string>@BUILD_VERSION@</string>
+  <key>LSMinimumSystemVersion</key><string>14.0</string>
+  <key>LSUIElement</key><true/>
+  <key>NSCalendarsFullAccessUsageDescription</key><string>Show upcoming events in the Agenda panel.</string>
+  <key>NSCalendarsUsageDescription</key><string>Show upcoming events in the Agenda panel.</string>
+</dict></plist>

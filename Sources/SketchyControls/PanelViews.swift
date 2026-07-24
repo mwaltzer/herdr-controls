@@ -104,6 +104,63 @@ private struct HerdrBrandTitle: View {
                 .font(.system(size: 18, weight: .bold, design: .monospaced))
                 .tracking(-0.7)
                 .foregroundStyle(SpaceTheme.text)
+
+            Spacer()
+
+            HerdrSettingsButton {
+                SettingsWindowController.shared.show()
+            }
+            .frame(width: 32, height: 32)
+        }
+    }
+}
+
+private struct HerdrSettingsButton: NSViewRepresentable {
+    let action: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(action: action)
+    }
+
+    func makeNSView(context: Context) -> NSButton {
+        let image = NSImage(
+            systemSymbolName: "gearshape",
+            accessibilityDescription: "Herdr settings"
+        ) ?? NSImage()
+        let button = NSButton(
+            image: image,
+            target: context.coordinator,
+            action: #selector(Coordinator.invoke)
+        )
+        button.bezelStyle = .texturedRounded
+        button.controlSize = .regular
+        button.imageScaling = .scaleProportionallyDown
+        button.isBordered = true
+        button.showsBorderOnlyWhileMouseInside = true
+        button.contentTintColor = NSColor(
+            calibratedRed: 166 / 255,
+            green: 173 / 255,
+            blue: 200 / 255,
+            alpha: 1
+        )
+        button.toolTip = "Herdr Settings"
+        button.setAccessibilityLabel("Herdr settings")
+        return button
+    }
+
+    func updateNSView(_ button: NSButton, context: Context) {
+        context.coordinator.action = action
+    }
+
+    final class Coordinator: NSObject {
+        var action: () -> Void
+
+        init(action: @escaping () -> Void) {
+            self.action = action
+        }
+
+        @objc func invoke() {
+            action()
         }
     }
 }
@@ -537,10 +594,7 @@ struct HerdrView: View {
                 }
             }
 
-            HerdrKeyboardLegend {
-                model.dismiss()
-                SettingsWindowController.shared.show()
-            }
+            HerdrKeyboardLegend()
         }
     }
 }
@@ -778,8 +832,6 @@ private struct HerdrStatusBadge: View {
 }
 
 private struct HerdrKeyboardLegend: View {
-    let openSettings: () -> Void
-
     var body: some View {
         VStack(spacing: 6) {
             HStack {
@@ -794,17 +846,6 @@ private struct HerdrKeyboardLegend: View {
                 legend(keys: "↩", action: "Open")
                 Spacer()
                 legend(keys: "Esc", action: "Close")
-                Button(action: openSettings) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(SpaceTheme.overlay)
-                        .frame(width: 22, height: 18)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .focusable(false)
-                .fixedSize()
-                .accessibilityLabel("Herdr settings")
             }
         }
         .padding(.horizontal, 2)

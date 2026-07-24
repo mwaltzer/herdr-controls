@@ -271,23 +271,24 @@ struct OnboardingRootView: View {
 
                 Divider().padding(.leading, 46)
 
-                Toggle(isOn: Binding(
-                    get: { model.preferences.tailnetDiscoveryEnabled },
-                    set: { model.setTailnetDiscovery($0) }
-                )) {
-                    HStack(spacing: 14) {
-                        Image(systemName: "network")
+                HStack(spacing: 14) {
+                    Image(systemName: "network")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 18)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Tailnet discovery").fontWeight(.medium)
+                        Text("Find remote Herdr sessions over SSH.")
+                            .font(.callout)
                             .foregroundStyle(.secondary)
-                            .frame(width: 18)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Tailnet discovery").fontWeight(.medium)
-                            Text("Find remote Herdr sessions over SSH.")
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                        }
                     }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { model.preferences.tailnetDiscoveryEnabled },
+                        set: { model.setTailnetDiscovery($0) }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
                 }
-                .toggleStyle(.switch)
                 .padding(14)
             }
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))

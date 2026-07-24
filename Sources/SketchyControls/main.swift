@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             NSApp.terminate(nil)
             return
         }
+        HerdrService.linkBundledCompanion()
         OnboardingWindowController.shared.showIfNeeded()
     }
 

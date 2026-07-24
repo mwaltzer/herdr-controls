@@ -131,7 +131,12 @@ public struct HerdrPreferences: Codable, Equatable, Sendable {
         let bundledTailnet = bundledExecutable(named: "herdr-tailnet-sessions")
         let bundledOpen = bundledExecutable(named: "herdr-open-tailnet-session")
         return HerdrPreferences(
-            herdrExecutable: bin + "/herdr",
+            herdrExecutable: firstExecutable([
+                bin + "/herdr",
+                NSHomeDirectory() + "/.local/share/mise/shims/herdr",
+                "/opt/homebrew/bin/herdr",
+                "/usr/local/bin/herdr",
+            ]) ?? bin + "/herdr",
             tailnetSessionsExecutable: bundledTailnet ?? bin + "/herdr-tailnet-sessions",
             openTailnetSessionExecutable: bundledOpen ?? bin + "/herdr-open-tailnet-session"
         )
@@ -142,6 +147,10 @@ public struct HerdrPreferences: Codable, Equatable, Sendable {
               FileManager.default.isExecutableFile(atPath: path)
         else { return nil }
         return path
+    }
+
+    private static func firstExecutable(_ paths: [String]) -> String? {
+        paths.first(where: FileManager.default.isExecutableFile(atPath:))
     }
 
     public init(from decoder: Decoder) throws {

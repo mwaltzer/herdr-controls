@@ -12,7 +12,8 @@ public enum BoundedProcess {
         executable: String,
         arguments: [String],
         timeout: TimeInterval,
-        outputLimit: Int = 1_048_576
+        outputLimit: Int = 1_048_576,
+        environment: [String: String]? = nil
     ) -> BoundedProcessResult? {
         let process = Process()
         let pipe = Pipe()
@@ -23,6 +24,9 @@ public enum BoundedProcess {
 
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
+        if let environment {
+            process.environment = ProcessInfo.processInfo.environment.merging(environment) { _, override in override }
+        }
         process.standardOutput = pipe
         process.standardError = FileHandle.nullDevice
         process.terminationHandler = { _ in termination.signal() }

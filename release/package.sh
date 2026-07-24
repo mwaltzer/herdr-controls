@@ -4,7 +4,8 @@
 #   release/package.sh [package|verify|clean]
 #
 # `package` (default) builds the release binary, assembles "Herdr Controls.app",
-# and produces a zip + sha256 under dist/. UNSIGNED archives are byte-stable:
+# and produces a zip, drag-to-Applications DMG, and sha256 files under dist/.
+# UNSIGNED archives are byte-stable:
 # identical inputs yield identical zips (normalized permissions/mtimes, sorted
 # entries, SOURCE_DATE_EPOCH). Signed/notarized artifacts are NOT byte-stable —
 # CMS signatures embed signing time and a secure timestamp — so reproduce-and-
@@ -66,6 +67,7 @@ canonicalize_out_dir() {
 canonicalize_out_dir
 app_dir="$out_dir/Herdr Controls.app"
 zip_path="$out_dir/HerdrControls-$version-$arch.zip"
+dmg_path="$out_dir/HerdrControls-$version-$arch.dmg"
 
 build() {
   log "swift build -c release ($arch)"
@@ -74,19 +76,24 @@ build() {
 
 assemble() {
   local bin_path
+  local helper_path
   bin_path="$(cd "$package_root" && swift build -c release --show-bin-path)/SketchyControls"
+  helper_path="$(cd "$package_root" && swift build -c release --show-bin-path)/HerdrControlsHelper"
   [[ -x "$bin_path" ]] || { echo "error: release binary missing at $bin_path" >&2; exit 1; }
+  [[ -x "$helper_path" ]] || { echo "error: helper binary missing at $helper_path" >&2; exit 1; }
 
   log "assembling $app_dir"
   rm -rf "$app_dir"
   mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
   install -m 755 "$bin_path" "$app_dir/Contents/MacOS/SketchyControls"
+  install -m 755 "$helper_path" "$app_dir/Contents/MacOS/HerdrControlsHelper"
   install -m 644 "$package_root/Sources/SketchyControls/Resources/herdr-mask.svg" \
+                 "$package_root/Sources/SketchyControls/Resources/HerdrControls.icns" \
                  "$package_root/Sources/SketchyControls/Resources/tailscale-icon.svg" \
                  "$app_dir/Contents/Resources/"
-  install -m 755 "$package_root/Resources/herdr-tailnet-sessions" \
-                 "$package_root/Resources/herdr-open-tailnet-session" \
-                 "$app_dir/Contents/Resources/"
+  install -m 755 "$helper_path" "$app_dir/Contents/Resources/herdr-tailnet-sessions"
+  install -m 755 "$package_root/Resources/herdr-open-tailnet-session" "$app_dir/Contents/Resources/"
+  cp -R "$package_root/Companion" "$app_dir/Contents/Resources/Companion"
   sed -e "s/@SHORT_VERSION@/$version/g" -e "s/@BUILD_VERSION@/$build_version/g" \
     "$release_dir/Info.plist.in" > "$app_dir/Contents/Info.plist"
   printf 'APPL????' > "$app_dir/Contents/PkgInfo"
@@ -100,6 +107,10 @@ sign() {
   fi
   log "codesigning with '$HC_SIGN_IDENTITY' (hardened runtime)"
   codesign --force --timestamp --options runtime \
+    --sign "$HC_SIGN_IDENTITY" "$app_dir/Contents/MacOS/HerdrControlsHelper"
+  codesign --force --timestamp --options runtime \
+    --sign "$HC_SIGN_IDENTITY" "$app_dir/Contents/Resources/herdr-tailnet-sessions"
+  codesign --force --timestamp --options runtime \
     --entitlements "$release_dir/HerdrControls.entitlements" \
     --sign "$HC_SIGN_IDENTITY" "$app_dir"
 }
@@ -107,22 +118,38 @@ sign() {
 archive() {
   log "writing deterministic archive $zip_path"
   rm -f "$zip_path" "$zip_path.sha256"
-  # Normalize permissions and mtimes so identical inputs produce identical
-  # zips; -X drops platform extra fields (uid/gid, native timestamps).
-  find "$app_dir" -type d -exec chmod 755 {} +
-  find "$app_dir" -type f -exec chmod 644 {} +
-  chmod 755 "$app_dir/Contents/MacOS/SketchyControls" \
-    "$app_dir/Contents/Resources/herdr-tailnet-sessions" \
-    "$app_dir/Contents/Resources/herdr-open-tailnet-session"
-  local stamp
-  # GNU (-d @epoch) and BSD (-r epoch) date syntaxes differ; try both.
-  stamp="$(TZ=UTC date -u -d "@$epoch" +%Y%m%d%H%M.%S 2>/dev/null \
-    || TZ=UTC date -u -r "$epoch" +%Y%m%d%H%M.%S)"
-  find "$app_dir" -exec touch -t "$stamp" {} +
+  if [[ -z "${HC_SIGN_IDENTITY:-}" ]]; then
+    # Only unsigned archives are reproducible. Changing modes or mtimes after
+    # signing would invalidate the code signature.
+    find "$app_dir" -type d -exec chmod 755 {} +
+    find "$app_dir" -type f -exec chmod 644 {} +
+    chmod 755 "$app_dir/Contents/MacOS/SketchyControls" \
+      "$app_dir/Contents/MacOS/HerdrControlsHelper" \
+      "$app_dir/Contents/Resources/herdr-tailnet-sessions" \
+      "$app_dir/Contents/Resources/herdr-open-tailnet-session" \
+      "$app_dir/Contents/Resources/Companion/scripts/report-vcs-metadata.sh"
+    local stamp
+    stamp="$(TZ=UTC date -u -d "@$epoch" +%Y%m%d%H%M.%S 2>/dev/null \
+      || TZ=UTC date -u -r "$epoch" +%Y%m%d%H%M.%S)"
+    find "$app_dir" -exec touch -t "$stamp" {} +
+  fi
   (cd "$out_dir" && find "Herdr Controls.app" | LC_ALL=C sort \
     | TZ=UTC zip -X -q "$(basename "$zip_path")" -@)
   (cd "$out_dir" && shasum -a 256 "$(basename "$zip_path")" > "$(basename "$zip_path").sha256")
   log "sha256: $(cut -d' ' -f1 "$zip_path.sha256")"
+}
+
+disk_image() {
+  local stage
+  stage="$(mktemp -d "${TMPDIR:-/tmp}/herdr-controls-dmg.XXXXXX")"
+  cp -R "$app_dir" "$stage/Herdr Controls.app"
+  ln -s /Applications "$stage/Applications"
+  rm -f "$dmg_path" "$dmg_path.sha256"
+  log "writing drag-to-Applications image $dmg_path"
+  hdiutil create -quiet -fs HFS+ -format UDZO \
+    -volname "Herdr Controls" -srcfolder "$stage" "$dmg_path"
+  rm -rf "$stage"
+  (cd "$out_dir" && shasum -a 256 "$(basename "$dmg_path")" > "$(basename "$dmg_path").sha256")
 }
 
 notarize() {
@@ -134,9 +161,10 @@ notarize() {
   log "submitting to notary service (profile $HC_NOTARY_PROFILE)"
   xcrun notarytool submit "$zip_path" --keychain-profile "$HC_NOTARY_PROFILE" --wait
   xcrun stapler staple "$app_dir"
-  # Stapling changes the bundle: rebuild the archive so the shipped zip
+  # Stapling changes the bundle: rebuild both shipped containers so each
   # contains the ticket.
   archive
+  disk_image
 }
 
 verify() {
@@ -144,14 +172,21 @@ verify() {
   log "verifying bundle structure"
   plutil -lint "$app_dir/Contents/Info.plist" >/dev/null
   [[ -x "$app_dir/Contents/MacOS/SketchyControls" ]]
+  [[ -x "$app_dir/Contents/MacOS/HerdrControlsHelper" ]]
   [[ -f "$app_dir/Contents/Resources/herdr-mask.svg" ]]
+  [[ -f "$app_dir/Contents/Resources/HerdrControls.icns" ]]
   [[ -x "$app_dir/Contents/Resources/herdr-tailnet-sessions" ]]
+  [[ -f "$app_dir/Contents/Resources/Companion/herdr-plugin.toml" ]]
   local plist_version
   plist_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app_dir/Contents/Info.plist")"
   [[ "$plist_version" == "$version" ]] || { echo "error: plist version $plist_version != VERSION $version" >&2; exit 1; }
   if [[ -f "$zip_path.sha256" ]]; then
     (cd "$out_dir" && shasum -a 256 -c "$(basename "$zip_path").sha256" >/dev/null)
     log "archive checksum verified"
+  fi
+  if [[ -f "$dmg_path.sha256" ]]; then
+    (cd "$out_dir" && shasum -a 256 -c "$(basename "$dmg_path").sha256" >/dev/null)
+    log "disk image checksum verified"
   fi
   if [[ -d "$app_dir/Contents/_CodeSignature" ]]; then
     log "verifying code signature"
@@ -170,6 +205,7 @@ case "${1:-package}" in
     assemble
     sign
     archive
+    disk_image
     notarize
     verify
     ;;

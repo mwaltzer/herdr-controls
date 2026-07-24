@@ -3,6 +3,16 @@
 Herdr Controls is a native macOS menu-bar app for discovering and opening
 Herdr workspaces and agents on the current Mac or across a Tailnet.
 
+## Install
+
+Download the Apple-silicon or Intel DMG from
+[GitHub Releases](https://github.com/mwaltzer/herdr-controls/releases/latest),
+open it, and drag **Herdr Controls** to **Applications**. Nix, Home Manager,
+Homebrew, `jq`, SketchyBar, and a terminal setup script are not required.
+
+Herdr is required. Tailscale and jj/Git are optional and are detected when
+their related features are used.
+
 It provides:
 
 - a native menu-bar picker and global shortcut;
@@ -73,4 +83,6 @@ Developer ID signing and notarization run only when their documented
 environment inputs are supplied.
 
 See [the architecture and product plan](documentation/architecture.md) for
-contracts, security boundaries, and release status.
+contracts, security boundaries, and release status. See
+[standalone distribution](documentation/distribution.md) for installation,
+uninstallation, signing, notarization, and release automation.

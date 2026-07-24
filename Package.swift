@@ -9,6 +9,7 @@ let package = Package(
         .library(name: "HerdrCore", targets: ["HerdrCore"]),
         .executable(name: "SketchyControls", targets: ["SketchyControls"]),
         .executable(name: "SketchyControlsCLI", targets: ["SketchyControlsCLI"]),
+        .executable(name: "HerdrControlsHelper", targets: ["HerdrControlsHelper"]),
         .executable(name: "SketchyControlsCoreChecks", targets: ["SketchyControlsCoreChecks"]),
     ],
     targets: [
@@ -20,6 +21,7 @@ let package = Package(
             exclude: ["Resources"]
         ),
         .executableTarget(name: "SketchyControlsCLI", dependencies: ["SketchyControlsCore"]),
+        .executableTarget(name: "HerdrControlsHelper", dependencies: ["SketchyControlsCore"]),
         .executableTarget(
             name: "SketchyControlsCoreChecks",
             dependencies: ["SketchyControlsCore", "HerdrCore"]

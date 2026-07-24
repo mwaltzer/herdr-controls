@@ -33,10 +33,17 @@ stdenv.mkDerivation {
     app="$out/Applications/Herdr Controls.app"
     mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$out/bin" "$out/share/herdr-controls"
     cp .build/release/SketchyControls "$app/Contents/MacOS/SketchyControls"
+    cp .build/release/HerdrControlsHelper "$app/Contents/MacOS/HerdrControlsHelper"
     cp Sources/SketchyControls/Resources/herdr-mask.svg "$app/Contents/Resources/"
+    cp Sources/SketchyControls/Resources/HerdrControls.icns "$app/Contents/Resources/"
     cp Sources/SketchyControls/Resources/tailscale-icon.svg "$app/Contents/Resources/"
-    cp Resources/herdr-tailnet-sessions Resources/herdr-open-tailnet-session "$app/Contents/Resources/"
-    chmod +x "$app/Contents/Resources/herdr-tailnet-sessions" "$app/Contents/Resources/herdr-open-tailnet-session"
+    cp .build/release/HerdrControlsHelper "$app/Contents/Resources/herdr-tailnet-sessions"
+    cp Resources/herdr-open-tailnet-session "$app/Contents/Resources/"
+    cp -R Companion "$app/Contents/Resources/Companion"
+    chmod +x "$app/Contents/MacOS/HerdrControlsHelper" \
+      "$app/Contents/Resources/herdr-tailnet-sessions" \
+      "$app/Contents/Resources/herdr-open-tailnet-session" \
+      "$app/Contents/Resources/Companion/scripts/report-vcs-metadata.sh"
     substitute release/Info.plist.in "$app/Contents/Info.plist" \
       --replace-fail "@SHORT_VERSION@" "${version}" \
       --replace-fail "@BUILD_VERSION@" "${version}"

@@ -9,6 +9,7 @@
   <key>CFBundleIdentifier</key><string>com.mwaltzer.herdr-controls</string>
   <key>CFBundleName</key><string>Herdr Controls</string>
   <key>CFBundleDisplayName</key><string>Herdr Controls</string>
+  <key>CFBundleIconFile</key><string>HerdrControls</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleShortVersionString</key><string>@SHORT_VERSION@</string>

@@ -1,6 +1,12 @@
 #!/bin/sh
 set -eu
 
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+bundled_helper="$script_dir/../../../MacOS/HerdrControlsHelper"
+if [ -x "$bundled_helper" ]; then
+  exec "$bundled_helper" report-vcs
+fi
+
 HERDR_BIN=${HERDR_BIN:-herdr}
 SOURCE_ID=controls_vcs
 

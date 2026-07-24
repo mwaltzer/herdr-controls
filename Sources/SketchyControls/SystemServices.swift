@@ -196,6 +196,20 @@ enum HerdrService {
         process.standardError = FileHandle.nullDevice
         try? process.run()
     }
+
+    static func linkBundledCompanion() {
+        let bundlePath = Bundle.main.bundleURL.path
+        guard bundlePath.contains("/Applications/"),
+              let plugin = Bundle.main.resourceURL?.appendingPathComponent("Companion"),
+              FileManager.default.fileExists(atPath: plugin.appendingPathComponent("herdr-plugin.toml").path)
+        else { return }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: preferences.herdrExecutable)
+        process.arguments = ["plugin", "link", plugin.path, "--enabled"]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try? process.run()
+    }
 }
 
 enum HerdrMacIntegration {

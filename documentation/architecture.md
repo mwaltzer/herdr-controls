@@ -127,8 +127,8 @@ Rules that keep the boundary honest:
 | VCS metadata | `Companion/` + `HerdrCore/Contracts.swift` | Done: optional Herdr plugin reports an allowlisted `vcs_*` contract; jj and Git supported |
 | Shortcuts / deep links | `HerdrIntents.swift` + URL router | Done: show, settings, local workspace/agent, and remote-agent routes |
 | macOS lifecycle | Settings + `HerdrMacIntegration` | Done: launch at login and opt-in agent notifications |
-| Tailnet identity / state | bundled `Resources/herdr-tailnet-sessions` | Done: concurrent probes, 10-second cache, OS/DNS/IP identity, online/unreachable distinction |
-| Signing / notarization / updates / distribution | Packaging | Phase 4 |
+| Tailnet identity / state | bundled native helper | Done: concurrent probes, 10-second cache, OS/DNS/IP identity, online/unreachable distinction |
+| Signing / notarization / distribution | Packaging + GitHub Actions | Done: dual-architecture DMG/ZIP pipeline; credentials supplied by repository secrets |
 
 ### Security and privacy stance
 
@@ -239,18 +239,18 @@ Update/distribution strategy, in order:
 1. **Dogfood (now)**: nix/Home Manager consumes this repository as a pinned
    flake input and builds the same bundle from the same plist template;
    launchd runs it. Updates arrive by updating the flake input and switching.
-2. **Manual releases (next)**: tag → `./release/package.sh` on a signing
-   machine → upload zip + `.sha256` to a GitHub Release. Users verify the
-   checksum; notarization makes Gatekeeper quiet.
+2. **Public releases**: a matching `v<VERSION>` tag builds signed and
+   notarized Apple-silicon and Intel ZIP/DMG artifacts in GitHub Actions and
+   publishes their checksums to a GitHub Release.
    No in-app updater yet — the app is launchd-managed for dogfood, and
    `CFBundleVersion` (override with `HC_BUILD_VERSION`) stays monotonic.
 3. **Sparkle (later, if the audience grows)**: requires an appcast URL,
    `SUFeedURL` in the plist template, and EdDSA keys — deferred until the
    stable feed home. Homebrew cask follows the first notarized GitHub release.
 
-Still open for Phase 4: an app icon (`CFBundleIconFile` is intentionally
-absent), universal (arm64+x86_64) builds, and a verified copyright holder for
-`NSHumanReadableCopyright` (omitted until confirmed).
+Still open: Sparkle updates and a verified copyright holder for
+`NSHumanReadableCopyright` (omitted until confirmed). The app icon and separate
+Apple-silicon/Intel release artifacts are complete.
 
 ## Verification
 

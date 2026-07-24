@@ -781,24 +781,31 @@ private struct HerdrKeyboardLegend: View {
     let openSettings: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
-            legend(keys: "J K", action: "Move")
-            legend(keys: "Tab", action: "Location")
-            legend(keys: "H L", action: "Type")
-            legend(keys: "↩", action: "Open")
-            Spacer(minLength: 4)
-            legend(keys: "Esc", action: "Close")
-            Button(action: openSettings) {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(SpaceTheme.overlay)
-                    .frame(width: 22, height: 18)
-                    .contentShape(Rectangle())
+        VStack(spacing: 6) {
+            HStack {
+                legend(keys: "J K", action: "Move")
+                Spacer()
+                legend(keys: "Tab", action: "Location")
+                Spacer()
+                legend(keys: "H L", action: "Type")
             }
-            .buttonStyle(.plain)
-            .focusable(false)
-            .fixedSize()
-            .accessibilityLabel("Herdr settings")
+
+            HStack {
+                legend(keys: "↩", action: "Open")
+                Spacer()
+                legend(keys: "Esc", action: "Close")
+                Button(action: openSettings) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(SpaceTheme.overlay)
+                        .frame(width: 22, height: 18)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .focusable(false)
+                .fixedSize()
+                .accessibilityLabel("Herdr settings")
+            }
         }
         .padding(.horizontal, 2)
     }
@@ -808,14 +815,16 @@ private struct HerdrKeyboardLegend: View {
             Text(keys)
                 .font(.system(size: 9, weight: .medium, design: .monospaced))
                 .foregroundStyle(SpaceTheme.subtext)
+                .lineLimit(1)
                 .padding(.horizontal, 5)
                 .frame(height: 18)
                 .background(SpaceTheme.surface.opacity(0.48), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
             Text(action)
                 .font(.system(size: 9))
                 .foregroundStyle(SpaceTheme.overlay)
+                .lineLimit(1)
         }
-        .fixedSize(horizontal: true, vertical: false)
+        .fixedSize()
     }
 }
 

@@ -11,6 +11,10 @@ command = ["sh", "scripts/report-vcs-metadata.sh"]
 on = "worktree.created"
 command = ["sh", "scripts/report-vcs-metadata.sh"]
 
+[[events]]
+on = "pane.agent_status_changed"
+command = ["sh", "scripts/report-vcs-metadata.sh"]
+
 [[actions]]
 id = "refresh"
 title = "Refresh VCS metadata"

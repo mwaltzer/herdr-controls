@@ -42,8 +42,8 @@ native metadata API:
 The app ignores every other token. This is deliberately an allowlisted data
 contract, not a general third-party plugin execution surface.
 
-Run `Companion/scripts/report-vcs-metadata.sh` to refresh metadata. Herdr
-expires it after two minutes, so a scheduler may safely run it once per minute.
+The companion refreshes on Herdr startup, worktree creation, agent state
+changes, or its manual “Refresh VCS metadata” action.
 
 The app uses macOS semantic colors and materials by default, so its appearance
 tracks the current system release, light/dark mode, accent, and accessibility

@@ -3,7 +3,6 @@ set -eu
 
 HERDR_BIN=${HERDR_BIN:-herdr}
 SOURCE_ID=controls_vcs
-TTL_MS=120000
 
 snapshot=$("$HERDR_BIN" api snapshot)
 
@@ -55,7 +54,7 @@ printf '%s' "$snapshot" | jq -r '
     continue
   fi
 
-  set -- workspace report-metadata "$workspace_id" --source "$SOURCE_ID" --ttl-ms "$TTL_MS" \
+  set -- workspace report-metadata "$workspace_id" --source "$SOURCE_ID" \
     --token "vcs_provider=$provider" --token "vcs_dirty=$dirty"
   [ -z "$ref" ] || set -- "$@" --token "vcs_ref=$ref"
   [ -z "$change" ] || set -- "$@" --token "vcs_change=$change"

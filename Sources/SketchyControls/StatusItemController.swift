@@ -88,39 +88,41 @@ final class StatusItemController: NSObject {
     }
 
     func togglePanelFromHotKey() {
-        guard let anchor = configuredSketchyBarAnchor() else {
-            togglePanel()
-            return
-        }
-        panelController.show(
-            kind: .herdr,
-            point: anchor,
-            toggle: true,
-            topEdge: anchor.y - 6
-        )
-    }
-
-    private func configuredSketchyBarAnchor() -> NSPoint? {
         guard
             let path = ProcessInfo.processInfo.environment["HERDR_PANEL_ANCHOR_EXECUTABLE"],
             FileManager.default.isExecutableFile(atPath: path)
-        else { return nil }
-
-        let process = Process()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: path)
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            return nil
+        else {
+            togglePanel()
+            return
         }
-        guard process.terminationStatus == 0 else { return nil }
 
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        guard let value = String(data: data, encoding: .utf8) else { return nil }
+        Task { [weak self] in
+            let anchor = await Task.detached(priority: .userInitiated) {
+                Self.configuredSketchyBarAnchor(path: path)
+            }.value
+            guard let self else { return }
+            guard let anchor else {
+                togglePanel()
+                return
+            }
+            panelController.show(
+                kind: .herdr,
+                point: anchor,
+                toggle: true,
+                topEdge: anchor.y - 6
+            )
+        }
+    }
+
+    nonisolated private static func configuredSketchyBarAnchor(path: String) -> NSPoint? {
+        guard let result = BoundedProcess.run(
+            executable: path,
+            arguments: [],
+            timeout: 0.5,
+            outputLimit: 1_024
+        ), !result.timedOut, result.terminationStatus == 0,
+           let value = String(data: result.output, encoding: .utf8)
+        else { return nil }
         let coordinates = value.split(whereSeparator: \.isWhitespace).compactMap { Double($0) }
         guard coordinates.count >= 2 else { return nil }
         return NSPoint(x: coordinates[0], y: coordinates[1])

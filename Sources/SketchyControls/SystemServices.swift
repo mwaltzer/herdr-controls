@@ -3,6 +3,7 @@ import CoreAudio
 import EventKit
 import Foundation
 import HerdrCore
+import SketchyControlsCore
 
 struct AudioSnapshot {
     var volume = 0.0
@@ -159,7 +160,7 @@ enum PerformanceService {
 
 struct ProcessCommandRunner: HerdrCommandRunning {
     func output(executable: String, arguments: [String]) -> Data {
-        shellData(executable, arguments)
+        shellData(executable, arguments, timeout: 8)
     }
 }
 
@@ -256,17 +257,15 @@ func shell(_ command: String, _ arguments: [String]) -> String {
     String(data: shellData(command, arguments), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 }
 
-func shellData(_ command: String, _ arguments: [String]) -> Data {
-    let process = Process()
-    let pipe = Pipe()
+func shellData(_ command: String, _ arguments: [String], timeout: TimeInterval = 5) -> Data {
     let resolved = command.contains("/") ? command : "/usr/bin/env"
-    process.executableURL = URL(fileURLWithPath: resolved)
-    process.arguments = command.contains("/") ? arguments : [command] + arguments
-    process.standardOutput = pipe
-    process.standardError = FileHandle.nullDevice
-    do { try process.run() } catch { return Data() }
-    process.waitUntilExit()
-    return pipe.fileHandleForReading.readDataToEndOfFile()
+    let resolvedArguments = command.contains("/") ? arguments : [command] + arguments
+    guard let result = BoundedProcess.run(
+        executable: resolved,
+        arguments: resolvedArguments,
+        timeout: timeout
+    ), !result.timedOut else { return Data() }
+    return result.output
 }
 
 extension String {

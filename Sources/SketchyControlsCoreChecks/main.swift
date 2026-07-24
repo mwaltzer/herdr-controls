@@ -2,6 +2,28 @@ import Foundation
 import HerdrCore
 import SketchyControlsCore
 
+let largeProcessOutput = BoundedProcess.run(
+    executable: "/bin/sh",
+    arguments: ["-c", "yes x | head -c 262144"],
+    timeout: 2,
+    outputLimit: 32_768
+)
+require(
+    largeProcessOutput?.timedOut == false && largeProcessOutput?.output.count == 32_768,
+    "bounded process drains and caps output while child runs"
+)
+
+let timeoutStart = Date()
+let timedOutProcess = BoundedProcess.run(
+    executable: "/bin/sh",
+    arguments: ["-c", "sleep 5"],
+    timeout: 0.1
+)
+require(
+    timedOutProcess?.timedOut == true && Date().timeIntervalSince(timeoutStart) < 1.5,
+    "bounded process terminates hung child"
+)
+
 func require(_ condition: @autoclosure () -> Bool, _ message: String) {
     guard condition() else {
         fputs("check failed: \(message)\n", stderr)

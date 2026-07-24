@@ -87,6 +87,45 @@ final class StatusItemController: NSObject {
         )
     }
 
+    func togglePanelFromHotKey() {
+        guard let anchor = configuredSketchyBarAnchor() else {
+            togglePanel()
+            return
+        }
+        panelController.show(
+            kind: .herdr,
+            point: anchor,
+            toggle: true,
+            topEdge: anchor.y - 6
+        )
+    }
+
+    private func configuredSketchyBarAnchor() -> NSPoint? {
+        guard
+            let path = ProcessInfo.processInfo.environment["HERDR_PANEL_ANCHOR_EXECUTABLE"],
+            FileManager.default.isExecutableFile(atPath: path)
+        else { return nil }
+
+        let process = Process()
+        let output = Pipe()
+        process.executableURL = URL(fileURLWithPath: path)
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return nil
+        }
+        guard process.terminationStatus == 0 else { return nil }
+
+        let data = output.fileHandleForReading.readDataToEndOfFile()
+        guard let value = String(data: data, encoding: .utf8) else { return nil }
+        let coordinates = value.split(whereSeparator: \.isWhitespace).compactMap { Double($0) }
+        guard coordinates.count >= 2 else { return nil }
+        return NSPoint(x: coordinates[0], y: coordinates[1])
+    }
+
     private func showContextMenu() {
         guard let button = statusItem.button else { return }
         let menu = NSMenu()

@@ -76,7 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             modifiers: specification.carbonModifiers
         ) { [weak self] in
             Task { @MainActor in
-                self?.statusItemController?.togglePanel()
+                self?.statusItemController?.togglePanelFromHotKey()
             }
         }
     }

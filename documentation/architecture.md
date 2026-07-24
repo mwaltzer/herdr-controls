@@ -1,9 +1,7 @@
 # Herdr Menu-Bar App — Architecture and Product Plan
 
-Working name: **Herdr Controls**. This documents how the
-`home-manager/packages/sketchy-controls` prototype evolves into a standalone
-macOS menu-bar app for Herdr session awareness and switching, with SketchyBar
-kept as an optional thin adapter.
+**Herdr Controls** is a standalone macOS menu-bar app for Herdr session
+awareness and switching, with SketchyBar kept as an optional thin adapter.
 
 ## Current state (post Tranche 1)
 
@@ -67,17 +65,16 @@ core modules and runs on every `nix build` of the package.
 
 ### Adapter posture
 
-SketchyBar is already a thin adapter: items call
-`sketchy-controls toggle <panel>` via `config/sketchybar/plugins/panel_click.sh`,
-and the badge plugin (`plugins/herdr.sh`) shells the same discovery commands.
+SketchyBar can be a thin adapter: items call
+`sketchy-controls toggle <panel>` from their click handlers, while a badge
+plugin may shell the same discovery commands.
 The socket + `PanelCommand` schema in `SketchyControlsCore` is the adapter
 contract; any future bar/launcher integrates the same way. Herdr session
-opening on remote hosts goes through `~/.local/bin/herdr-open-tailnet-session`
-(source: `home-manager/config/herdr/open-tailnet-session.sh`). The configured
-terminal travels as a third argv element (never through a shell); the script
-honors only exact known terminal names — each mapped to a fixed launch argv —
-and logs + falls back to Ghostty for anything else, so preference tampering
-cannot inject arguments.
+opening on remote hosts goes through the configured
+`herdr-open-tailnet-session` helper. The configured terminal travels as a
+third argv element (never through a shell); a helper should honor only exact
+known terminal names, map each to a fixed launch argv, and fall back safely so
+preference tampering cannot inject arguments.
 
 ## Target architecture
 
@@ -202,7 +199,8 @@ Product identity is now single-sourced:
 Release packaging (no credentials required):
 
 ```sh
-cd home-manager/packages/sketchy-controls
+git clone https://github.com/mwaltzer/herdr-controls.git
+cd herdr-controls
 ./release/package.sh            # build + assemble + zip + sha256 + verify
 ./release/package.sh verify     # re-check an existing dist/
 ./release/package.sh clean      # remove dist/ (output dir is guard-railed)
@@ -230,29 +228,30 @@ shasum -a 256 -c dist/HerdrControls-<version>-arm64.zip.sha256
 
 Update/distribution strategy, in order:
 
-1. **Dogfood (now)**: nix/Home Manager builds the same bundle from the same
-   plist template; launchd runs it. Updates arrive via `home-manager switch`.
+1. **Dogfood (now)**: nix/Home Manager consumes this repository as a pinned
+   flake input and builds the same bundle from the same plist template;
+   launchd runs it. Updates arrive by updating the flake input and switching.
 2. **Manual releases (next)**: tag → `./release/package.sh` on a signing
-   machine → upload zip + `.sha256` to a GitHub Release once the repo split
-   happens. Users verify the checksum; notarization makes Gatekeeper quiet.
+   machine → upload zip + `.sha256` to a GitHub Release. Users verify the
+   checksum; notarization makes Gatekeeper quiet.
    No in-app updater yet — the app is launchd-managed for dogfood, and
    `CFBundleVersion` (override with `HC_BUILD_VERSION`) stays monotonic.
 3. **Sparkle (later, if the audience grows)**: requires an appcast URL,
    `SUFeedURL` in the plist template, and EdDSA keys — deferred until the
-   standalone repo exists so the feed has a stable home. Homebrew cask
-   follows the first notarized GitHub release.
+   stable feed home. Homebrew cask follows the first notarized GitHub release.
 
-Still open for Phase 4: repo extraction, an app icon (`CFBundleIconFile` is
-intentionally absent), universal (arm64+x86_64) builds, and a verified
-copyright holder for `NSHumanReadableCopyright` (omitted until confirmed).
+Still open for Phase 4: an app icon (`CFBundleIconFile` is intentionally
+absent), universal (arm64+x86_64) builds, and a verified copyright holder for
+`NSHumanReadableCopyright` (omitted until confirmed).
 
 ## Verification
 
 ```sh
-cd home-manager/packages/sketchy-controls
+git clone https://github.com/mwaltzer/herdr-controls.git
+cd herdr-controls
 swift build && swift run SketchyControlsCoreChecks   # fast loop
 swift build -c release && .build/release/SketchyControlsCoreChecks  # what nix runs
 ```
 
-`nix build` of the package (via `home-manager build`) runs the same checks in
-its `checkPhase`.
+`nix build` runs the same checks in its `checkPhase`. A Home Manager consumer
+can pin this flake and use `packages.aarch64-darwin.default`.

@@ -1,9 +1,10 @@
 import AppKit
 import HerdrCore
 import SketchyControlsCore
+import UserNotifications
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     private var server: IPCServer?
     private var panelController: PanelController?
     private var statusItemController: StatusItemController?
@@ -14,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        UNUserNotificationCenter.current().delegate = self
         let model = AppModel()
         model.refresh(.controlCenter)
         let panelController = PanelController(model: model)
@@ -33,6 +35,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         OnboardingWindowController.shared.showIfNeeded()
     }
 
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        guard let paneID = response.notification.request.content.userInfo["pane_id"] as? String else { return }
+        await MainActor.run {
+            HerdrService.focusAgent(paneID)
+        }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         refreshTimer?.invalidate()
         refreshTimer = nil
@@ -42,6 +54,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         preferencesObserver = nil
         server = nil
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.scheme == "herdr-controls" {
+            route(url)
+        }
+    }
+
+    private func route(_ url: URL) {
+        switch url.host {
+        case "show":
+            panelController?.show(kind: .herdr, point: nil, toggle: false)
+        case "settings":
+            SettingsWindowController.shared.show()
+        case "workspace":
+            guard let id = url.pathComponents.dropFirst().first else { return }
+            HerdrService.focusWorkspace(id)
+        case "agent":
+            guard let id = url.pathComponents.dropFirst().first else { return }
+            HerdrService.focusAgent(id)
+        case "remote":
+            let components = url.pathComponents.dropFirst()
+            guard components.count == 2 else { return }
+            let host = components[components.startIndex]
+            let paneID = components[components.index(after: components.startIndex)]
+            // URL schemes are callable by other apps. Only attach to a
+            // host/pane pair already returned by our Tailnet discovery
+            // contract; never turn a deep link into an arbitrary SSH target.
+            guard panelController?.model.herdr.remoteHosts.contains(where: {
+                $0.host == host && $0.agents.contains(where: { $0.id == paneID })
+            }) == true else { return }
+            HerdrService.openRemote(host: host, paneID: paneID)
+        default:
+            break
+        }
     }
 
     private func apply(_ preferences: HerdrPreferences) {
@@ -55,6 +102,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             scheduleRefresh(every: preferences.refreshInterval)
         } else if let previous, discoverySettingsChanged(from: previous, to: preferences) {
             refreshHerdr()
+        }
+        if previous?.launchAtLogin != preferences.launchAtLogin {
+            HerdrMacIntegration.applyLaunchAtLogin(preferences.launchAtLogin)
+        }
+        if previous?.agentNotificationsEnabled != preferences.agentNotificationsEnabled {
+            HerdrMacIntegration.requestNotificationsIfNeeded(preferences.agentNotificationsEnabled)
         }
     }
 

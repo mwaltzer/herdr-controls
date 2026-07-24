@@ -21,8 +21,8 @@ core modules and runs on every `nix build` of the package.
 ### HerdrCore boundary
 
 - **Contracts** (`Contracts.swift`): versioned decoders for the two session
-  sources — the local `herdr` CLI envelopes (`herdr workspace list`,
-  `herdr agent list`; `HerdrContract.localVersion`) and the
+  sources — the native `herdr api snapshot` envelope (with legacy
+  `workspace list` / `agent list` fallback; `HerdrContract.localVersion`) and the
   `herdr-tailnet-sessions` aggregated host array
   (`HerdrContract.tailnetVersion`). Decoders throw typed
   `HerdrContractError`s and tolerate unknown fields, so newer Herdr releases
@@ -52,7 +52,7 @@ core modules and runs on every `nix build` of the package.
 - **Preferences** (`Preferences.swift`): versioned `HerdrPreferences`
   (tool paths, terminal app, tailnet-discovery toggle, panel hotkey as a
   semantic `HotKeySpec`, refresh cadence, default panel location/kind, hidden
-  tailnet hosts) behind a `HerdrPreferencesStore` protocol with a JSON file
+  tailnet hosts, agent notifications, and standalone launch-at-login) behind a `HerdrPreferencesStore` protocol with a JSON file
   store at `~/Library/Application Support/HerdrControls/preferences.json`.
   Missing fields backfill defaults; unknown enum raw values from newer
   versions degrade per-field instead of discarding the file; corrupt files
@@ -95,7 +95,7 @@ preference tampering cannot inject arguments.
                     │ preferences · (diagnostics)   │
                     └───────────────┬───────────────┘
                                     │ HerdrCommandRunning
-                     herdr CLI · herdr-tailnet-sessions · ssh
+                     herdr API · bundled Tailnet helper · ssh
 ```
 
 Rules that keep the boundary honest:
@@ -124,12 +124,17 @@ Rules that keep the boundary honest:
 | Security / privacy | See below | Ongoing |
 | Accessibility / multi-display / reduced motion | App shell | Partial: Reduce Motion honored in panel animations, native anchoring/status-item hotkey landed; VoiceOver sweep still open |
 | Diagnostics | `HerdrCore/Diagnostics.swift` + Settings → Support | Done: copy-diagnostics report (hostnames/session titles omitted) |
+| VCS metadata | `Companion/` + `HerdrCore/Contracts.swift` | Done: optional Herdr plugin reports an allowlisted `vcs_*` contract; jj and Git supported |
+| Shortcuts / deep links | `HerdrIntents.swift` + URL router | Done: show, settings, local workspace/agent, and remote-agent routes |
+| macOS lifecycle | Settings + `HerdrMacIntegration` | Done: launch at login and opt-in agent notifications |
+| Tailnet identity / state | bundled `Resources/herdr-tailnet-sessions` | Done: concurrent probes, 10-second cache, OS/DNS/IP identity, online/unreachable distinction |
 | Signing / notarization / updates / distribution | Packaging | Phase 4 |
 
 ### Security and privacy stance
 
-- No network access from the app itself; all remote reach is via the user's
-  `ssh` (BatchMode, keys only) through the tailnet helper scripts, which
+- No arbitrary network client or plugin API is exposed by the app; all remote
+  reach is via the user's `ssh` (BatchMode, keys only) through the bundled
+  tailnet helper scripts, which
   validate host/pane arguments against strict character classes.
 - The IPC socket is per-user (`$TMPDIR/sketchy-controls-$UID.sock`, mode 600).
   Commands are display-only actions (show/dismiss panels); no secrets transit
@@ -139,6 +144,9 @@ Rules that keep the boundary honest:
   Info.plist). Preferences contain paths and UI choices only, never secrets.
 - Logs (`~/Library/Logs/sketchy-controls*.log`) may contain hostnames; keep
   session titles out of logs when diagnostics land.
+- The VCS companion publishes only `vcs_provider`, `vcs_ref`, `vcs_change`,
+  and `vcs_dirty` through Herdr's display-only metadata API. The app ignores
+  every other token and never executes a command supplied by a plugin.
 
 ## Phased plan
 

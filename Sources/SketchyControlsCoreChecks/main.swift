@@ -76,6 +76,15 @@ let tailnetJSON = Data("""
   {"agent":"pi","agent_status":"running","pane_id":"r-1","workspace_id":"ws-9","terminal_title_stripped":"remote","focused":false}
 ]}]
 """.utf8)
+let nativeSnapshotJSON = Data("""
+{"result":{"snapshot":{"workspaces":[
+  {"workspace_id":"ws-1","label":"docs","number":1,"agent_status":"idle","focused":true,
+   "tokens":{"vcs_provider":"jj","vcs_ref":"main","vcs_change":"abc123","vcs_dirty":"true"}}
+],"agents":[
+  {"agent":"codex","agent_status":"idle","pane_id":"p-1","workspace_id":"ws-1",
+   "terminal_title_stripped":"docs","focused":true,"cwd":"/repo","state_change_seq":42}
+]}}}
+""".utf8)
 
 do {
     let workspaces = try HerdrLocalContract.decodeWorkspaces(workspaceJSON)
@@ -84,6 +93,10 @@ do {
     require(agents.count == 2 && agents[0].id == "p-1" && agents[0].workspaceID == "ws-1", "agent envelope decoding")
     let hosts = try HerdrTailnetContract.decodeHosts(tailnetJSON)
     require(hosts.count == 1 && hosts[0].host == "studio" && hosts[0].agents.count == 1, "tailnet host decoding")
+    let native = try HerdrLocalContract.decodeSnapshot(nativeSnapshotJSON)
+    require(native.workspaces[0].vcs?.provider == "jj", "allowlisted VCS metadata decoding")
+    require(native.workspaces[0].vcs?.dirty == true, "VCS dirty state decoding")
+    require(native.agents[0].cwd == "/repo" && native.agents[0].stateChangeSequence == 42, "native agent metadata decoding")
 } catch {
     fputs("unexpected contract error: \(error)\n", stderr)
     exit(EXIT_FAILURE)
@@ -128,6 +141,13 @@ let liveRunner = FakeRunner(outputs: [
 let liveSnapshot = HerdrSessionDiscovery(preferences: checkPreferences, runner: liveRunner).snapshot()
 require(liveSnapshot.localStatus == .ok && liveSnapshot.available, "discovery success status")
 require(liveSnapshot.workspaces.count == 2 && liveSnapshot.agents.count == 2 && liveSnapshot.remoteHosts.count == 1, "discovery success payload")
+
+let nativeRunner = FakeRunner(outputs: [
+    "/fake/herdr api snapshot": nativeSnapshotJSON,
+    "/fake/herdr-tailnet-sessions": tailnetJSON,
+])
+let nativeSnapshot = HerdrSessionDiscovery(preferences: checkPreferences, runner: nativeRunner).snapshot()
+require(nativeSnapshot.workspaces[0].vcs?.reference == "main", "native API snapshot preferred")
 
 let deadLocalSnapshot = HerdrSessionDiscovery(
     preferences: checkPreferences,

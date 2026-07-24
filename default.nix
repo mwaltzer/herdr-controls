@@ -35,6 +35,8 @@ stdenv.mkDerivation {
     cp .build/release/SketchyControls "$app/Contents/MacOS/SketchyControls"
     cp Sources/SketchyControls/Resources/herdr-mask.svg "$app/Contents/Resources/"
     cp Sources/SketchyControls/Resources/tailscale-icon.svg "$app/Contents/Resources/"
+    cp Resources/herdr-tailnet-sessions Resources/herdr-open-tailnet-session "$app/Contents/Resources/"
+    chmod +x "$app/Contents/Resources/herdr-tailnet-sessions" "$app/Contents/Resources/herdr-open-tailnet-session"
     substitute release/Info.plist.in "$app/Contents/Info.plist" \
       --replace-fail "@SHORT_VERSION@" "${version}" \
       --replace-fail "@BUILD_VERSION@" "${version}"

@@ -526,6 +526,9 @@ struct HerdrView: View {
                                                         Text(agents.isEmpty ? "No attached agents" : "\(agents.count) attached \(agents.count == 1 ? "agent" : "agents")")
                                                             .font(.system(size: 10))
                                                             .foregroundStyle(SpaceTheme.overlay)
+                                                        if let vcs = workspace.vcs {
+                                                            HerdrVCSLabel(metadata: vcs)
+                                                        }
                                                     }
 
                                                     Spacer(minLength: 8)
@@ -604,7 +607,10 @@ struct HerdrView: View {
                                                         .foregroundStyle(SpaceTheme.overlay)
                                                 }
                                                 Spacer()
-                                                HerdrMetaBadge("SSH", color: SpaceTheme.teal)
+                                                HerdrMetaBadge(
+                                                    remote.reachable ? "SSH" : "Offline",
+                                                    color: remote.reachable ? SpaceTheme.teal : SpaceTheme.overlay
+                                                )
                                               }
                                               .padding(.horizontal, 10)
                                               .frame(minHeight: 48)
@@ -612,7 +618,7 @@ struct HerdrView: View {
                                             }
                                             .buttonStyle(HerdrInteractiveButtonStyle())
                                             .focusable(false)
-                                            .disabled(remote.agents.isEmpty)
+                                            .disabled(!remote.reachable || remote.agents.isEmpty)
                                             .accessibilityLabel("Tailnet host \(remote.host)")
                                             .accessibilityValue(
                                                 "\(remote.agents.count) available \(remote.agents.count == 1 ? "agent" : "agents")"
@@ -869,6 +875,33 @@ private struct HerdrMetaBadge: View {
         Text(value)
             .font(.system(size: 9, weight: .medium))
             .foregroundStyle(color)
+    }
+}
+
+private struct HerdrVCSLabel: View {
+    let metadata: HerdrVCSMetadata
+
+    private var detail: String {
+        metadata.reference ?? metadata.change ?? "repository"
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: metadata.provider == "jj" ? "arrow.triangle.branch" : "point.3.connected.trianglepath.dotted")
+                .font(.system(size: 8, weight: .medium))
+            Text(detail)
+                .lineLimit(1)
+            if metadata.dirty {
+                Circle()
+                    .fill(SpaceTheme.yellow)
+                    .frame(width: 5, height: 5)
+                    .accessibilityLabel("Uncommitted changes")
+            }
+        }
+        .font(.system(size: 9, design: .monospaced))
+        .foregroundStyle(SpaceTheme.overlay)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(metadata.provider) \(detail)\(metadata.dirty ? ", uncommitted changes" : "")")
     }
 }
 

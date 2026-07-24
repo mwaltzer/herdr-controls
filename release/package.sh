@@ -84,6 +84,9 @@ assemble() {
   install -m 644 "$package_root/Sources/SketchyControls/Resources/herdr-mask.svg" \
                  "$package_root/Sources/SketchyControls/Resources/tailscale-icon.svg" \
                  "$app_dir/Contents/Resources/"
+  install -m 755 "$package_root/Resources/herdr-tailnet-sessions" \
+                 "$package_root/Resources/herdr-open-tailnet-session" \
+                 "$app_dir/Contents/Resources/"
   sed -e "s/@SHORT_VERSION@/$version/g" -e "s/@BUILD_VERSION@/$build_version/g" \
     "$release_dir/Info.plist.in" > "$app_dir/Contents/Info.plist"
   printf 'APPL????' > "$app_dir/Contents/PkgInfo"
@@ -108,7 +111,9 @@ archive() {
   # zips; -X drops platform extra fields (uid/gid, native timestamps).
   find "$app_dir" -type d -exec chmod 755 {} +
   find "$app_dir" -type f -exec chmod 644 {} +
-  chmod 755 "$app_dir/Contents/MacOS/SketchyControls"
+  chmod 755 "$app_dir/Contents/MacOS/SketchyControls" \
+    "$app_dir/Contents/Resources/herdr-tailnet-sessions" \
+    "$app_dir/Contents/Resources/herdr-open-tailnet-session"
   local stamp
   # GNU (-d @epoch) and BSD (-r epoch) date syntaxes differ; try both.
   stamp="$(TZ=UTC date -u -d "@$epoch" +%Y%m%d%H%M.%S 2>/dev/null \
@@ -140,6 +145,7 @@ verify() {
   plutil -lint "$app_dir/Contents/Info.plist" >/dev/null
   [[ -x "$app_dir/Contents/MacOS/SketchyControls" ]]
   [[ -f "$app_dir/Contents/Resources/herdr-mask.svg" ]]
+  [[ -x "$app_dir/Contents/Resources/herdr-tailnet-sessions" ]]
   local plist_version
   plist_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app_dir/Contents/Info.plist")"
   [[ "$plist_version" == "$version" ]] || { echo "error: plist version $plist_version != VERSION $version" >&2; exit 1; }

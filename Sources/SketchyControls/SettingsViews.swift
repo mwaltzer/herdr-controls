@@ -12,6 +12,7 @@ struct SettingsRootView: View {
             shortcutSection
             terminalSection
             panelSection
+            macOSSection
             tailnetSection
             diagnosticsSection
 
@@ -25,6 +26,16 @@ struct SettingsRootView: View {
         }
         .formStyle(.grouped)
         .frame(minWidth: 440, minHeight: 480)
+    }
+
+    private var macOSSection: some View {
+        Section("macOS") {
+            Toggle("Launch at login", isOn: model.bind(\.launchAtLogin))
+            Toggle("Notify when agents finish or need attention", isOn: model.bind(\.agentNotificationsEnabled))
+            Text("Notifications include the workspace and session title, never prompt contents.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var shortcutSection: some View {

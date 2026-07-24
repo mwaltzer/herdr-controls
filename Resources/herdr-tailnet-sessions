@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+tailscale_bin=$(command -v tailscale 2>/dev/null || true)
+if [[ -z "$tailscale_bin" ]]; then
+  printf '[]\n'
+  exit 0
+fi
+
+cache_root="${XDG_CACHE_HOME:-$HOME/Library/Caches}/HerdrControls"
+cache_file="$cache_root/tailnet-sessions.json"
+mkdir -p "$cache_root"
+cache_mtime=0
+if [[ -f "$cache_file" ]]; then
+  if [[ $(uname -s) == Darwin ]]; then
+    cache_mtime=$(/usr/bin/stat -f %m "$cache_file" 2>/dev/null || echo 0)
+  else
+    cache_mtime=$(stat -c %Y "$cache_file" 2>/dev/null || echo 0)
+  fi
+fi
+if [[ -f "$cache_file" ]] && [[ $(( $(date +%s) - cache_mtime )) -lt 10 ]]; then
+  cat "$cache_file"
+  exit 0
+fi
+
+status=$("$tailscale_bin" status --json 2>/dev/null) || {
+  [[ -f "$cache_file" ]] && cat "$cache_file" || printf '[]\n'
+  exit 0
+}
+
+session_dir=$(mktemp -d "${TMPDIR:-/tmp}/herdr-controls-tailnet.XXXXXX") || exit 1
+cleanup() {
+  case "$session_dir" in
+    "${TMPDIR:-/tmp}"/herdr-controls-tailnet.*) /bin/rm -rf -- "$session_dir" ;;
+  esac
+}
+trap cleanup EXIT
+
+while IFS= read -r peer; do
+  host=$(jq -r '.host' <<< "$peer")
+  [[ "$host" =~ ^[A-Za-z0-9.-]+$ ]] || continue
+  output="$session_dir/$(printf '%s' "$host" | tr -c 'A-Za-z0-9._-' '_').json"
+  (
+    payload=$(ssh -o BatchMode=yes -o ConnectTimeout=2 "$host" \
+      '$HOME/.local/bin/herdr api snapshot' 2>/dev/null) || {
+        jq -c '. + {connection_status:"unreachable", agents:[]}' <<< "$peer" > "$output"
+        exit 0
+      }
+    jq -c --argjson peer "$peer" '
+      select(.result.snapshot.agents)
+      | $peer + {connection_status:"online", agents:.result.snapshot.agents}
+    ' <<< "$payload" > "$output"
+  ) &
+done < <(jq -c '
+  .Self.HostName as $self
+  | .Peer[]
+  | select(.Online and (.OS == "macOS" or .OS == "linux"))
+  | select(.HostName != $self)
+  | {
+      host: .HostName,
+      dns_name: (.DNSName // ""),
+      tailnet_ip: (.TailscaleIPs[0] // ""),
+      os: .OS,
+      last_seen: (.LastSeen // "")
+    }
+' <<< "$status")
+
+wait
+result=$(jq -s 'sort_by(.host)' "$session_dir"/*.json 2>/dev/null || printf '[]')
+temp_cache="$cache_file.tmp.$$"
+printf '%s\n' "$result" > "$temp_cache"
+mv -f "$temp_cache" "$cache_file"
+printf '%s\n' "$result"

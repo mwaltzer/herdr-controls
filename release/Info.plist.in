@@ -15,6 +15,13 @@
   <key>CFBundleVersion</key><string>@BUILD_VERSION@</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key><string>Herdr Controls</string>
+      <key>CFBundleURLSchemes</key><array><string>herdr-controls</string></array>
+    </dict>
+  </array>
   <key>NSCalendarsFullAccessUsageDescription</key><string>Show upcoming events in the Agenda panel.</string>
   <key>NSCalendarsUsageDescription</key><string>Show upcoming events in the Agenda panel.</string>
 </dict></plist>

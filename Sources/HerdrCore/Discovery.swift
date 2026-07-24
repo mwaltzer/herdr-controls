@@ -59,6 +59,18 @@ public struct HerdrSessionDiscovery: Sendable {
         }
 
         do {
+            let snapshotData = runner.output(executable: preferences.herdrExecutable, arguments: ["api", "snapshot"])
+            if let native = try? HerdrLocalContract.decodeSnapshot(snapshotData) {
+                return HerdrSnapshot(
+                    workspaces: native.workspaces,
+                    agents: native.agents,
+                    remoteHosts: remoteHosts,
+                    localStatus: .ok
+                )
+            }
+
+            // Herdr < 0.7.5 fallback. Keeping this path makes upgrades
+            // independent and avoids coupling the app to a single release.
             let workspaceData = runner.output(executable: preferences.herdrExecutable, arguments: ["workspace", "list"])
             let agentData = runner.output(executable: preferences.herdrExecutable, arguments: ["agent", "list"])
             return HerdrSnapshot(

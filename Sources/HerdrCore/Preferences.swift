@@ -46,7 +46,7 @@ public enum HerdrTerminal: String, Codable, CaseIterable, Sendable {
 /// missing fields (each falls back to its default) so older files keep
 /// working as fields are added; unknown fields are ignored for the reverse.
 public struct HerdrPreferences: Codable, Equatable, Sendable {
-    public static let currentVersion = 1
+    public static let currentVersion = 2
 
     public var version: Int
     public var herdrExecutable: String
@@ -72,6 +72,11 @@ public struct HerdrPreferences: Codable, Equatable, Sendable {
     /// false for pre-onboarding preference files, so existing installs see the
     /// welcome window exactly once.
     public var onboardingCompleted: Bool
+    /// Opt-in notifications for meaningful agent state transitions.
+    public var agentNotificationsEnabled: Bool
+    /// Standalone app lifecycle. Declarative/dogfood installs may leave this
+    /// off and continue using their existing launch agent.
+    public var launchAtLogin: Bool
 
     public static let refreshIntervalRange: ClosedRange<TimeInterval> = 5...3600
 
@@ -87,7 +92,9 @@ public struct HerdrPreferences: Codable, Equatable, Sendable {
         defaultLocation: HerdrLocation = .local,
         defaultTargetKind: HerdrTargetKind = .containers,
         hiddenHosts: [String] = [],
-        onboardingCompleted: Bool = false
+        onboardingCompleted: Bool = false,
+        agentNotificationsEnabled: Bool = false,
+        launchAtLogin: Bool = false
     ) {
         self.version = version
         self.herdrExecutable = herdrExecutable
@@ -101,6 +108,8 @@ public struct HerdrPreferences: Codable, Equatable, Sendable {
         self.defaultTargetKind = defaultTargetKind
         self.hiddenHosts = hiddenHosts
         self.onboardingCompleted = onboardingCompleted
+        self.agentNotificationsEnabled = agentNotificationsEnabled
+        self.launchAtLogin = launchAtLogin
     }
 
     public static func clampedRefreshInterval(_ value: TimeInterval) -> TimeInterval {
@@ -119,11 +128,20 @@ public struct HerdrPreferences: Codable, Equatable, Sendable {
 
     public static func `default`() -> HerdrPreferences {
         let bin = NSHomeDirectory() + "/.local/bin"
+        let bundledTailnet = bundledExecutable(named: "herdr-tailnet-sessions")
+        let bundledOpen = bundledExecutable(named: "herdr-open-tailnet-session")
         return HerdrPreferences(
             herdrExecutable: bin + "/herdr",
-            tailnetSessionsExecutable: bin + "/herdr-tailnet-sessions",
-            openTailnetSessionExecutable: bin + "/herdr-open-tailnet-session"
+            tailnetSessionsExecutable: bundledTailnet ?? bin + "/herdr-tailnet-sessions",
+            openTailnetSessionExecutable: bundledOpen ?? bin + "/herdr-open-tailnet-session"
         )
+    }
+
+    private static func bundledExecutable(named name: String) -> String? {
+        guard let path = Bundle.main.resourceURL?.appendingPathComponent(name).path,
+              FileManager.default.isExecutableFile(atPath: path)
+        else { return nil }
+        return path
     }
 
     public init(from decoder: Decoder) throws {
@@ -132,10 +150,15 @@ public struct HerdrPreferences: Codable, Equatable, Sendable {
         version = try container.decodeIfPresent(Int.self, forKey: .version) ?? Self.currentVersion
         herdrExecutable = try container.decodeIfPresent(String.self, forKey: .herdrExecutable)
             ?? defaults.herdrExecutable
-        tailnetSessionsExecutable = try container.decodeIfPresent(String.self, forKey: .tailnetSessionsExecutable)
-            ?? defaults.tailnetSessionsExecutable
-        openTailnetSessionExecutable = try container.decodeIfPresent(String.self, forKey: .openTailnetSessionExecutable)
-            ?? defaults.openTailnetSessionExecutable
+        let legacyBin = NSHomeDirectory() + "/.local/bin"
+        let decodedTailnet = try container.decodeIfPresent(String.self, forKey: .tailnetSessionsExecutable)
+        tailnetSessionsExecutable = decodedTailnet == legacyBin + "/herdr-tailnet-sessions"
+            ? defaults.tailnetSessionsExecutable
+            : decodedTailnet ?? defaults.tailnetSessionsExecutable
+        let decodedOpen = try container.decodeIfPresent(String.self, forKey: .openTailnetSessionExecutable)
+        openTailnetSessionExecutable = decodedOpen == legacyBin + "/herdr-open-tailnet-session"
+            ? defaults.openTailnetSessionExecutable
+            : decodedOpen ?? defaults.openTailnetSessionExecutable
         terminalApp = try container.decodeIfPresent(String.self, forKey: .terminalApp) ?? defaults.terminalApp
         tailnetDiscoveryEnabled = try container.decodeIfPresent(Bool.self, forKey: .tailnetDiscoveryEnabled)
             ?? defaults.tailnetDiscoveryEnabled
@@ -155,6 +178,10 @@ public struct HerdrPreferences: Codable, Equatable, Sendable {
             .filter(Self.isValidHostName)
         onboardingCompleted = try container.decodeIfPresent(Bool.self, forKey: .onboardingCompleted)
             ?? defaults.onboardingCompleted
+        agentNotificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .agentNotificationsEnabled)
+            ?? defaults.agentNotificationsEnabled
+        launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin)
+            ?? defaults.launchAtLogin
     }
 }
 

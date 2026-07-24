@@ -1,0 +1,18 @@
+id = "dev.herdr.controls-vcs"
+name = "Herdr Controls VCS Metadata"
+version = "0.1.0"
+min_herdr_version = "0.7.5"
+platforms = ["linux", "macos"]
+
+[[startup]]
+command = ["sh", "scripts/report-vcs-metadata.sh"]
+
+[[events]]
+on = "worktree.created"
+command = ["sh", "scripts/report-vcs-metadata.sh"]
+
+[[actions]]
+id = "refresh"
+title = "Refresh VCS metadata"
+contexts = ["workspace", "global"]
+command = ["sh", "scripts/report-vcs-metadata.sh"]

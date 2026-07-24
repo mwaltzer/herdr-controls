@@ -4,6 +4,8 @@ import EventKit
 import Foundation
 import HerdrCore
 import SketchyControlsCore
+import ServiceManagement
+import UserNotifications
 
 struct AudioSnapshot {
     var volume = 0.0
@@ -193,6 +195,58 @@ enum HerdrService {
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         try? process.run()
+    }
+}
+
+enum HerdrMacIntegration {
+    static func applyLaunchAtLogin(_ enabled: Bool) {
+        guard Bundle.main.bundleURL.pathExtension == "app" else { return }
+        do {
+            if enabled {
+                if SMAppService.mainApp.status != .enabled {
+                    try SMAppService.mainApp.register()
+                }
+            } else if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            // The settings UI remains the source of intent. Registration may
+            // be unavailable for an unsigned development bundle.
+        }
+    }
+
+    static func requestNotificationsIfNeeded(_ enabled: Bool) {
+        guard enabled else { return }
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    }
+
+    static func notify(agent: HerdrAgent, workspaceLabel: String?, status: String) {
+        let content = UNMutableNotificationContent()
+        content.title = status == "blocked" ? "Agent needs attention" : "Agent finished"
+        content.body = "\(workspaceLabel ?? "Herdr") · \(agent.terminalTitleStripped)"
+        content.sound = .default
+        content.userInfo = ["pane_id": agent.id]
+        let request = UNNotificationRequest(
+            identifier: "herdr-agent-\(agent.id)-\(agent.stateChangeSequence)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    @MainActor
+    static func donateActivity(
+        title: String,
+        identifier: String,
+        url: URL
+    ) {
+        let activity = NSUserActivity(activityType: "com.mwaltzer.herdr-controls.open")
+        activity.title = title
+        activity.targetContentIdentifier = identifier
+        activity.webpageURL = url
+        activity.isEligibleForSearch = true
+        activity.keywords = ["Herdr", "workspace", "agent"]
+        activity.becomeCurrent()
     }
 }
 

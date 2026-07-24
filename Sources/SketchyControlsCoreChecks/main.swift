@@ -146,6 +146,42 @@ require(HerdrNavigation.normalizedSelection("agent:p-1", in: targets) == "agent:
 require(HerdrNavigation.normalizedSelection("agent:gone", in: targets) == nil, "normalization drops dead selection")
 require(HerdrNavigation.scopedSelection("host:studio", in: localAgents) == "agent:p-1", "scope change snaps to first")
 require(HerdrNavigation.scopedSelection(nil, in: []) == nil, "empty scope selection stays nil")
+require(
+    HerdrNavigation.selectionWhenChangingKind(
+        from: "workspace:ws-2",
+        to: .agents,
+        location: .local,
+        in: liveSnapshot
+    ) == "agent:p-2",
+    "workspace to agents preserves workspace context"
+)
+require(
+    HerdrNavigation.selectionWhenChangingKind(
+        from: "agent:p-1",
+        to: .containers,
+        location: .local,
+        in: liveSnapshot
+    ) == "workspace:ws-1",
+    "agent to workspaces selects parent workspace"
+)
+require(
+    HerdrNavigation.selectionWhenChangingKind(
+        from: "host:studio",
+        to: .agents,
+        location: .tailnet,
+        in: liveSnapshot
+    ) == "remote:studio:r-1",
+    "host to agents preserves host context"
+)
+require(
+    HerdrNavigation.selectionWhenChangingKind(
+        from: "remote:studio:r-1",
+        to: .containers,
+        location: .tailnet,
+        in: liveSnapshot
+    ) == "host:studio",
+    "remote agent to hosts selects parent host"
+)
 
 // MARK: - HerdrCore lifecycle checks
 

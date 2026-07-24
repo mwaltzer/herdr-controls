@@ -145,8 +145,14 @@ final class AppModel: ObservableObject {
     }
 
     func setHerdrTargetKind(_ kind: HerdrTargetKind) {
+        guard kind != herdrTargetKind else { return }
+        selectedHerdrKey = HerdrNavigation.selectionWhenChangingKind(
+            from: selectedHerdrKey,
+            to: kind,
+            location: herdrLocation,
+            in: herdr
+        )
         herdrTargetKind = kind
-        normalizeScopedHerdrSelection()
     }
 
     private func normalizeScopedHerdrSelection() {

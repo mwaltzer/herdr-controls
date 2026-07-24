@@ -100,4 +100,44 @@ public enum HerdrNavigation {
         if targets.contains(where: { $0.key == current }) { return current }
         return targets.first?.key
     }
+
+    /// Preserve the selected container/agent relationship while switching
+    /// between the two list types. Falls back to the normal scoped selection
+    /// when the selected container has no agent or its relationship vanished.
+    public static func selectionWhenChangingKind(
+        from current: String?,
+        to kind: HerdrTargetKind,
+        location: HerdrLocation,
+        in snapshot: HerdrSnapshot
+    ) -> String? {
+        let scoped = scopedTargets(in: snapshot, location: location, kind: kind)
+        guard
+            let current,
+            let selected = targets(in: snapshot).first(where: { $0.key == current })
+        else {
+            return scopedSelection(current, in: scoped)
+        }
+
+        let related: String?
+        switch (location, kind, selected.action) {
+        case let (.local, .agents, .workspace(workspaceID)):
+            related = snapshot.agents.first(where: { $0.workspaceID == workspaceID })
+                .map { "agent:\($0.id)" }
+        case let (.local, .containers, .agent(agentID)):
+            related = snapshot.agents.first(where: { $0.id == agentID })
+                .map { "workspace:\($0.workspaceID)" }
+        case let (.tailnet, .agents, .remoteHost(host, _)):
+            related = snapshot.remoteHosts.first(where: { $0.host == host })?.agents.first
+                .map { "remote:\(host):\($0.id)" }
+        case let (.tailnet, .containers, .remoteAgent(host, _)):
+            related = "host:\(host)"
+        default:
+            related = nil
+        }
+
+        if let related, scoped.contains(where: { $0.key == related }) {
+            return related
+        }
+        return scopedSelection(current, in: scoped)
+    }
 }

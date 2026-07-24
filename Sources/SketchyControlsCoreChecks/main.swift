@@ -16,6 +16,11 @@ do {
     require(toggle.source == "volume", "source parsing")
     require(toggle.mouseX == 12.5 && toggle.mouseY == 44, "mouse position")
 
+    let anchored = try PanelCommand.parse(arguments: [
+        "show", "herdr", "--source", "herdr", "--mouse-x", "2827", "--mouse-y", "1959"
+    ])
+    require(anchored.mouseX == 2827 && anchored.mouseY == 1959, "argument mouse position")
+
     let status = try PanelCommand.parse(arguments: ["status"])
     require(status.action == .status && status.panel == nil, "status parsing")
 

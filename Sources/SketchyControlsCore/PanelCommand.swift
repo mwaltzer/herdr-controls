@@ -71,13 +71,25 @@ public struct PanelCommand: Codable, Equatable, Sendable {
         if let index = arguments.firstIndex(of: "--source"), arguments.indices.contains(index + 1) {
             source = arguments[index + 1]
         }
+        let argumentMouse: (Double, Double)? = {
+            guard
+                let xIndex = arguments.firstIndex(of: "--mouse-x"),
+                arguments.indices.contains(xIndex + 1),
+                let x = Double(arguments[xIndex + 1]),
+                let yIndex = arguments.firstIndex(of: "--mouse-y"),
+                arguments.indices.contains(yIndex + 1),
+                let y = Double(arguments[yIndex + 1])
+            else { return nil }
+            return (x, y)
+        }()
+        let resolvedMouse = mouse ?? argumentMouse
 
         return PanelCommand(
             action: action,
             panel: panel,
             source: source,
-            mouseX: mouse?.0,
-            mouseY: mouse?.1
+            mouseX: resolvedMouse?.0,
+            mouseY: resolvedMouse?.1
         )
     }
 }
@@ -86,7 +98,7 @@ public enum CommandError: Error, LocalizedError {
     case usage
 
     public var errorDescription: String? {
-        "usage: sketchy-controls (toggle|show) PANEL [--source ITEM] | dismiss | status"
+        "usage: sketchy-controls (toggle|show) PANEL [--source ITEM] [--mouse-x X --mouse-y Y] | dismiss | status"
     }
 }
 

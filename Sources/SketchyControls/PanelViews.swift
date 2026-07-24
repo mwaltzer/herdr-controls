@@ -127,16 +127,14 @@ private struct HerdrSettingsButton: NSViewRepresentable {
             systemSymbolName: "gearshape",
             accessibilityDescription: "Herdr settings"
         ) ?? NSImage()
-        let button = NSButton(
+        let button = HerdrSettingsNSButton(
             image: image,
             target: context.coordinator,
             action: #selector(Coordinator.invoke)
         )
-        button.bezelStyle = .texturedRounded
         button.controlSize = .regular
         button.imageScaling = .scaleProportionallyDown
-        button.isBordered = true
-        button.showsBorderOnlyWhileMouseInside = true
+        button.isBordered = false
         button.contentTintColor = NSColor(
             calibratedRed: 166 / 255,
             green: 173 / 255,
@@ -162,6 +160,71 @@ private struct HerdrSettingsButton: NSViewRepresentable {
         @objc func invoke() {
             action()
         }
+    }
+}
+
+private final class HerdrSettingsNSButton: NSButton {
+    private var tracking: NSTrackingArea?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        configure()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configure()
+    }
+
+    private func configure() {
+        wantsLayer = true
+        layer?.cornerRadius = 7
+        layer?.borderWidth = 1
+        updateAppearance(hovered: false)
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let tracking {
+            removeTrackingArea(tracking)
+        }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.activeAlways, .mouseEnteredAndExited],
+            owner: self
+        )
+        addTrackingArea(area)
+        tracking = area
+    }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        updateAppearance(hovered: true)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        updateAppearance(hovered: false)
+    }
+
+    private func updateAppearance(hovered: Bool) {
+        layer?.backgroundColor = hovered
+            ? NSColor(calibratedRed: 49 / 255, green: 50 / 255, blue: 68 / 255, alpha: 0.72).cgColor
+            : NSColor.clear.cgColor
+        layer?.borderColor = NSColor(
+            calibratedRed: 205 / 255,
+            green: 214 / 255,
+            blue: 244 / 255,
+            alpha: hovered ? 0.18 : 0.10
+        ).cgColor
+        contentTintColor = NSColor(
+            calibratedRed: hovered ? 205 / 255 : 166 / 255,
+            green: hovered ? 214 / 255 : 173 / 255,
+            blue: hovered ? 244 / 255 : 200 / 255,
+            alpha: 1
+        )
     }
 }
 
@@ -460,7 +523,7 @@ struct HerdrView: View {
                                                 .frame(minHeight: 48)
                                                 .contentShape(Rectangle())
                                             }
-                                            .buttonStyle(.plain)
+                                            .buttonStyle(HerdrInteractiveButtonStyle())
                                             .focusable(false)
                                             .accessibilityLabel("Workspace \(workspace.label)")
                                             .accessibilityValue(
@@ -482,7 +545,7 @@ struct HerdrView: View {
                                                         selected: model.isHerdrSelected("agent:\(agent.id)")
                                                     )
                                                 }
-                                                .buttonStyle(.plain)
+                                                .buttonStyle(HerdrInteractiveButtonStyle())
                                                 .focusable(false)
                                                 .herdrSelection(
                                                     model.isHerdrSelected("agent:\(agent.id)"),
@@ -534,7 +597,7 @@ struct HerdrView: View {
                                               .frame(minHeight: 48)
                                               .contentShape(Rectangle())
                                             }
-                                            .buttonStyle(.plain)
+                                            .buttonStyle(HerdrInteractiveButtonStyle())
                                             .focusable(false)
                                             .disabled(remote.agents.isEmpty)
                                             .accessibilityLabel("Tailnet host \(remote.host)")
@@ -559,7 +622,7 @@ struct HerdrView: View {
                                                         selected: model.isHerdrSelected("remote:\(remote.host):\(agent.id)")
                                                     )
                                                 }
-                                                .buttonStyle(.plain)
+                                                .buttonStyle(HerdrInteractiveButtonStyle())
                                                 .focusable(false)
                                                 .herdrSelection(
                                                     model.isHerdrSelected("remote:\(remote.host):\(agent.id)"),
@@ -659,7 +722,7 @@ private struct HerdrNavigationPicker: View {
             .frame(maxWidth: .infinity, minHeight: 42)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HerdrInteractiveButtonStyle())
         .focusable(false)
         .background(selected ? SpaceTheme.surface.opacity(0.72) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .accessibilityValue(selected ? "Selected" : "Not selected")
@@ -687,7 +750,7 @@ private struct HerdrNavigationPicker: View {
             .frame(maxWidth: .infinity, minHeight: 22)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(HerdrInteractiveButtonStyle())
         .focusable(false)
         .accessibilityValue(selected ? "Selected" : "Not selected")
         .overlay(alignment: .bottom) {
@@ -735,6 +798,16 @@ private struct HerdrAgentRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(remote ? "Remote" : "Local") \(agent) agent, \(title)")
         .accessibilityValue("\(status.isEmpty ? "unknown" : status)\(focused ? ", focused" : "")")
+    }
+}
+
+private struct HerdrInteractiveButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .onHover { hovering in
+                (hovering ? NSCursor.pointingHand : NSCursor.arrow).set()
+            }
     }
 }
 
